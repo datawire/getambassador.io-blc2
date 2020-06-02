@@ -88,7 +88,7 @@ class Checker:
             self._bodycache[baseurl] = soup
         return self._bodycache[baseurl]
 
-    def is_url_broken(self, url) -> Optional[str]:
+    def is_url_broken(self, url: str) -> Optional[str]:
         resp = self._client.get(url)
         if isinstance(resp, str):
             return resp
@@ -153,7 +153,7 @@ class Checker:
             for attr in attrs:
                 for element in page_soup.select(f"{tagname}[{attr}]"):
                     link_url = baseurl.parse(element[attr])
-                    broken_reason = self.is_url_broken(link_url)
+                    broken_reason = self.is_url_broken(link_url.resolved)
                     yield LinkResult(
                         url=link_url,
                         html=element,
