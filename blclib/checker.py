@@ -1,5 +1,6 @@
 from http.client import HTTPMessage
-from typing import Dict, NamedTuple, Optional, Iterable, Union
+from queue import Queue
+from typing import Dict, Iterable, NamedTuple, Optional, Set, Union
 from urllib.parse import urldefrag, urljoin, urlparse
 
 import bs4.element
@@ -18,7 +19,8 @@ class LinkURL:
         if urlparse(self.original).scheme:
             return self.original
         if not self.base:
-            raise Exception(f"could not resolve to an absolute URL: {self.original}")
+            raise Exception(
+                f"could not resolve to an absolute URL: {self.original}")
         ret = urljoin(self.base.resolved, self.original)
         if not urlparse(ret).scheme:
             raise Exception(f"could not resolve to an absolute URL: {ret}")
@@ -48,16 +50,22 @@ def get_content_type(resp: requests.Response) -> str:
 class Checker:
 
     _client = HTTPClient()
-    _bodycache: Dict[str, Union[BeautifulSoup,str]] = dict()
+    _bodycache: Dict[str, Union[BeautifulSoup, str]] = dict()
+    _queue: Queue[str] = Queue()
+    _done: Set[str] = set()
 
     def enqueue(self, url: str) -> None:
-        pass
+        url = urldefrag(url).url
+        self._queue.put(url)
 
     def run(self) -> None:
-        pass
+        while not self._queue.empty():
+            url = self._queue.get()
+            if url not in self._done:
+                self.check_page(url)
 
-    def get_resp(self, url) -> Union[requests.Response,str]:
-        resp: Union[requests.Response,str] = "HTTP_unknown"
+    def get_resp(self, url) -> Union[requests.Response, str]:
+        resp: Union[requests.Response, str] = "HTTP_unknown"
         try:
             resp = self._client.get(url)
             if resp.status_code != 200:
@@ -66,11 +74,11 @@ class Checker:
             resp = f"{err}"
         return resp
 
-    def get_soup(self, url) -> Union[BeautifulSoup,str]:
+    def get_soup(self, url) -> Union[BeautifulSoup, str]:
         """returns a BeautifulSoup on success, or an error string on failure."""
         baseurl = urldefrag(url).url
         if baseurl not in self._bodycache:
-            soup: Union[BeautifulSoup,str] = "HTML_unknown"
+            soup: Union[BeautifulSoup, str] = "HTML_unknown"
 
             resp = self.get_resp(url)
             if isinstance(resp, str):
@@ -103,9 +111,10 @@ class Checker:
 
         return None
 
-    def check_html(self,
-                   page_url: str,
-                   page_soup: BeautifulSoup,
+    def check_html(
+        self,
+        page_url: str,
+        page_soup: BeautifulSoup,
     ) -> Iterable[LinkResult]:
         baseurl = LinkURL(page_url)
         basetags = page_soup.select('base[href]')
@@ -160,3 +169,11 @@ class Checker:
                         broken=bool(broken_reason),
                         broken_reason=broken_reason,
                     )
+
+    def check_page(self, url: str) -> None:
+        soup = self.get_soup(url)
+        if isinstance(soup, str):
+            print(f"error: {soup}")
+            return
+        for link in self.check_html(url, soup):
+            print(f"link: {link}")
