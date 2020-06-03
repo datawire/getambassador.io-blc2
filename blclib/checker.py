@@ -37,6 +37,7 @@ class LinkURL:
 
 class LinkResult(NamedTuple):
     url: LinkURL
+    pageurl: LinkURL
     html: bs4.element.Tag
     broken: bool
     broken_reason: Optional[str]
@@ -48,7 +49,7 @@ def get_content_type(resp: requests.Response) -> str:
     return msg.get_content_type()
 
 
-class Checker:
+class BaseChecker:
 
     _client = HTTPClient()
     _bodycache: Dict[str, Union[BeautifulSoup, str]] = dict()
@@ -120,7 +121,7 @@ class Checker:
         page_url: str,
         page_soup: BeautifulSoup,
     ) -> Iterable[LinkResult]:
-        baseurl = LinkURL(page_url)
+        baseurl = pageurl = LinkURL(page_url)
         basetags = page_soup.select('base[href]')
         if basetags:
             baseurl = baseurl.parse(basetags[0]['href'])
@@ -165,19 +166,27 @@ class Checker:
         for tagname, attrs in selectors.items():
             for attr in attrs:
                 for element in page_soup.select(f"{tagname}[{attr}]"):
-                    link_url = baseurl.parse(element[attr])
-                    broken_reason = self.is_url_broken(link_url.resolved)
+                    linkurl = baseurl.parse(element[attr])
+                    broken_reason = self.is_url_broken(linkurl.resolved)
                     yield LinkResult(
-                        url=link_url,
+                        url=linkurl,
+                        pageurl=pageurl,
                         html=element,
                         broken=bool(broken_reason),
                         broken_reason=broken_reason,
                     )
 
     def check_page(self, url: str) -> None:
+        print(f"Processing {url}")
         soup = self.get_soup(url)
         if isinstance(soup, str):
-            print(f"error: {soup}")
+            self.handle_page_error(url, soup)
             return
         for link in self.check_html(url, soup):
-            print(f"link: {link}")
+            self.handle_link_result(link)
+
+    def handle_link_result(self, result: LinkResult) -> None:
+        pass
+
+    def handle_page_error(self, url: str, err: str) -> None:
+        print(f"error: {url}: {err}")
