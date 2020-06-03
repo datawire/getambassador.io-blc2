@@ -1,14 +1,14 @@
 from http.client import HTTPMessage
 from queue import Queue
-from typing import Dict, Optional, Set, Union
+from typing import Container, Dict, Mapping, Optional, Set, Text, Tuple, Union
 from urllib.parse import urldefrag
 
 # import bs4.element
 import requests
 from bs4 import BeautifulSoup
 
-# from .data_uri import DataAdapter
-from .httpcache import HTTPClient
+from .data_uri import DataAdapter
+from .httpcache import HTTPClient as BaseHTTPClient
 from .models import Link, URLReference
 
 
@@ -18,18 +18,39 @@ def get_content_type(resp: requests.Response) -> str:
     return msg.get_content_type()
 
 
+class HTTPClient(BaseHTTPClient):
+    _checker: BaseChecker
+
+    def __init__(self, checker: BaseChecker):
+        self._checker = checker
+        super().__init__()
+        self.mount('data:', DataAdapter())
+
+    def hook_before_send(
+        self,
+        request: requests.models.PreparedRequest,
+        stream: bool = False,
+        timeout: Union[None, float, Tuple[float, float], Tuple[float, None]] = None,
+        verify: Union[bool, str] = True,
+        cert: Union[None, Union[bytes, Text], Container[Union[bytes, Text]]] = None,
+        proxies: Optional[Mapping[str, str]] = None,
+    ) -> None:
+        assert request.url
+        self._checker.handle_request_starting(request.url)
+
+
 class BaseChecker:
 
-    _client = HTTPClient()
+    _client: HTTPClient
     _bodycache: Dict[str, Union[BeautifulSoup, str]] = dict()
     _queue: 'Queue[Union[Link,URLReference]]' = Queue()
     _done_pages: Set[str] = set()
 
     def __init__(self):
-        self._client.mount('data:', DataAdapter())
+        self._client = HTTPClient(self)
 
     def enqueue(self, task: Union[Link, URLReference]) -> None:
-        """enqueue a task fro the checker to do.
+        """enqueue a task for the checker to do.
         If the task is a...
 
           - URLReference: Check the page pointed to by this URL for
@@ -185,6 +206,13 @@ class BaseChecker:
 
         # Inspect the page for bad links
         self._process_html(page_url, page_soup)
+
+    def handle_request_starting(self, url: str) -> None:
+        """handle_request_starting is a hook; called before we send a
+        (non-cached) request.
+
+        """
+        pass
 
     def handle_page_starting(self, url: str) -> None:
         """handle_page_starting is a hook; called when we start processing an
