@@ -1,6 +1,6 @@
 from http.client import HTTPMessage
 from queue import Queue
-from typing import Dict, Set, Union, Optional #, Iterable, NamedTuple
+from typing import Dict, Optional, Set, Union
 from urllib.parse import urldefrag
 
 # import bs4.element
@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 # from .data_uri import DataAdapter
 from .httpcache import HTTPClient
 from .models import Link, URLReference
+
 
 def get_content_type(resp: requests.Response) -> str:
     msg = HTTPMessage()
@@ -27,7 +28,7 @@ class BaseChecker:
     def __init__(self):
         self._client.mount('data:', DataAdapter())
 
-    def enqueue(self, task: Union[Link,URLReference]) -> None:
+    def enqueue(self, task: Union[Link, URLReference]) -> None:
         """enqueue a task fro the checker to do.
         If the task is a...
 
@@ -97,9 +98,7 @@ class BaseChecker:
         resp = self._client.get(link.linkurl.resolved)
         if isinstance(resp, str):
             return resp
-        link = link._replace(
-            linkurl=link.linkurl._replace(
-                resolved=resp.url))
+        link = link._replace(linkurl=link.linkurl._replace(resolved=resp.url))
 
         # Check the fragment
         fragment = urldefrag(link.linkurl.resolved).fragment
@@ -112,11 +111,7 @@ class BaseChecker:
 
         return None
 
-    def _process_html(
-        self,
-        page_url: URLReference,
-        page_soup: BeautifulSoup,
-    ) -> None:
+    def _process_html(self, page_url: URLReference, page_soup: BeautifulSoup,) -> None:
         selectors = {
             '*': {'itemtype'},
             'a': {'href', 'ping'},
@@ -163,11 +158,7 @@ class BaseChecker:
             for attr in attrs:
                 for element in page_soup.select(f"{tagname}[{attr}]"):
                     link_url = base_url.parse(element[attr])
-                    self.enqueue(Link(
-                        linkurl=link_url,
-                        pageurl=page_url,
-                        html=element
-                    ))
+                    self.enqueue(Link(linkurl=link_url, pageurl=page_url, html=element))
 
     def _check_page(self, page_url: URLReference) -> None:
         # Log that we're starting
@@ -191,7 +182,7 @@ class BaseChecker:
             self.handle_page_error(page_url.resolved, page_soup)
             self._done_pages.add(page_url.resolved)
             return
-        
+
         # Inspect the page for bad links
         self._process_html(page_url, page_soup)
 

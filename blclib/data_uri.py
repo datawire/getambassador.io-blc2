@@ -9,13 +9,9 @@ from urllib3.response import HTTPResponse
 
 
 class DataAdapter(BaseAdapter):
-    def send(self,
-             request,
-             stream=False,
-             timeout=None,
-             verify=True,
-             cert=None,
-             proxies=None):
+    def send(
+        self, request, stream=False, timeout=None, verify=True, cert=None, proxies=None,
+    ):
         try:
             # This is very similar to the parser in
             # urllib.request.DataHandler in the standard library.
@@ -25,7 +21,7 @@ class DataAdapter(BaseAdapter):
             data = unquote_to_bytes(data)
             if mediatype.endswith(';base64'):
                 data = base64.decodebytes(data)
-                mediatype = mediatype[:-len(';base64')]
+                mediatype = mediatype[: -len(';base64')]
 
             if not mediatype:
                 mediatype = "text/plain;charset=US-ASCII"
@@ -36,10 +32,7 @@ class DataAdapter(BaseAdapter):
         u3resp = HTTPResponse(
             status=200,
             reason='OK',
-            headers={
-                'Content-Type': mediatype,
-                'Content-Length': len(data),
-            },
+            headers={'Content-Type': mediatype, 'Content-Length': len(data),},
             body=data,
         )
 

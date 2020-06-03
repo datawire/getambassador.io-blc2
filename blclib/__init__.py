@@ -1,8 +1,2 @@
-from .checker import (
-    get_content_type,
-    BaseChecker,
-)
-from .models import (
-    Link,
-    URLReference,
-)
+from .checker import BaseChecker, get_content_type
+from .models import Link, URLReference

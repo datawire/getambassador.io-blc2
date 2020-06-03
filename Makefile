@@ -10,5 +10,5 @@ venv: venv/bin/pip requirements.txt
 
 format: venv
 	. ./venv/bin/activate && isort $$(git ls-files ':*.py' ':*.pyi')
-	. ./venv/bin/activate && yapf -i $$(git ls-files ':*.py' ':*.pyi')
+	. ./venv/bin/activate && black --line-length=89 --target-version=py36 --skip-string-normalization .
 .PHONY: format

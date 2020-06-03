@@ -1,17 +1,22 @@
 import re
 import sys
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 from urllib.parse import urlparse
+
 from blclib import BaseChecker, Link, URLReference
 
-def log_broken(link: Link, reason: str) -> None:
-    print(f'Page {link.pageurl.resolved} has a broken link: "{link.linkurl.ref}" ({reason})')    
 
-def log_ugly(link: Link, reason: str, suggestion: Optional[str]=None) -> None:
+def log_broken(link: Link, reason: str) -> None:
+    msg = f'Page {link.pageurl.resolved} has a broken link: "{link.linkurl.ref}" ({reason})'
+    print(msg)
+
+
+def log_ugly(link: Link, reason: str, suggestion: Optional[str] = None) -> None:
     msg = f'Page {link.pageurl.resolved} has an ugly link: "{link.linkurl.ref}" {reason}'
     if suggestion:
         msg += f' (did you mean "{suggestion}"?)'
     print(msg)
+
 
 def is_doc_url(url: URLReference) -> Optional[str]:
     """Returns the docs version if 'url' is a docs-url, or None if 'url' is not a docs-url."""
@@ -23,12 +28,17 @@ def is_doc_url(url: URLReference) -> Optional[str]:
         return 'latest'
     return None
 
+
+def urlpath(url: str) -> str:
+    return urlparse(url).path
+
+
 class Checker(BaseChecker):
     domain: str
 
     def __init__(self, domain: str):
         self.domain = domain
-    
+
     def handle_page_starting(self, url: str) -> None:
         print(f"Processing {url}")
 
@@ -38,14 +48,29 @@ class Checker(BaseChecker):
     def handle_link_result(self, link: Link, broken: Optional[str]) -> None:
         if broken:
             # Handle broken links
-            if ((link.linkurl.ref == 'https://blog.getambassador.io/search?q=canary') or
-                (link.linkurl.ref == 'https://app.datadoghq.com/apm/traces') or
-                (re.match('^HTTP_5[0-9]{2}$', broken)) or
-                (broken == 'HTTP_204' and (link.linkurl.resolved.startswith('https://www.youtube.com/') or link.linkurl.resolved.startswith('https://youtu.be/'))) or
-                (broken == 'HTTP_429') or
-                (broken == 'HTTP_999' and link.linkurl.resolved.startswith('https://www.linkedin.com/')) or
-                (link.html.tagName == 'link' and link.html.attrName == 'href' and link.html['rel'] == 'canonical' and urlparse(link.linkurl.resolved).path == urlparse(link.pageurl.resolved).path) or
-                (link.html.text == 'Edit this page on GitHub')
+            if (
+                (link.linkurl.ref == 'https://blog.getambassador.io/search?q=canary')
+                or (link.linkurl.ref == 'https://app.datadoghq.com/apm/traces')
+                or (re.match('^HTTP_5[0-9]{2}$', broken))
+                or (
+                    broken == 'HTTP_204'
+                    and (
+                        link.linkurl.resolved.startswith('https://www.youtube.com/')
+                        or link.linkurl.resolved.startswith('https://youtu.be/')
+                    )
+                )
+                or (broken == 'HTTP_429')
+                or (
+                    broken == 'HTTP_999'
+                    and link.linkurl.resolved.startswith('https://www.linkedin.com/')
+                )
+                or (
+                    link.html.tagName == 'link'
+                    and link.html.attrName == 'href'
+                    and link.html['rel'] == 'canonical'
+                    and urlpath(link.linkurl.resolved) == urlpath(link.pageurl.resolved)
+                )
+                or (link.html.text == 'Edit this page on GitHub')
             ):
                 pass  # skip
             else:
@@ -56,26 +81,42 @@ class Checker(BaseChecker):
                 self.enqueue(link.linkurl)
             # Check for "ugly" (semantically-broken, but not-technically-broken) links.
             ref = urlparse(link.linkurl.ref)
-            if link.html.tagName == 'link' and link.html['rel'] == 'canonical': # canonical links
+            if (
+                link.html.tagName == 'link' and link.html['rel'] == 'canonical'
+            ):  # canonical links
                 if ref.netloc != 'www.getambassador.io':
-                    log_ugly(link=link,
-                             reason='is a canonical but does not point at www.getambassador.io',
-                             suggestion=urlparse(link.linkurl.resolved)._replace(scheme='https', netloc='www.getambassador.io').geturl())
+                    log_ugly(
+                        link=link,
+                        reason='is a canonical but does not point at www.getambassador.io',
+                        suggestion=urlparse(link.linkurl.resolved)
+                        ._replace(scheme='https', netloc='www.getambassador.io')
+                        .geturl(),
+                    )
                 # Other than that, the canonicals don't need to be inspected more, because they're
                 # allowed (expected!) to be cross-version.
-            elif re.match(r'^(.*\.)?getambassador.io$', ref.netloc) or ref.netloc == self.domain: # should-be-internal links
+            elif (
+                re.match(r'^(.*\.)?getambassador.io$', ref.netloc)
+                or ref.netloc == self.domain
+            ):  # should-be-internal links
                 # Links within getambassador.io should not mention the scheme or domain
                 # (this way, they work in netlify previews)
-                log_ugly(link=link,
-                         reason='is an internal link but has a domain',
-                         suggestion=urlparse(link.linkurl.resolved)._replace(scheme='', netloc='').geturl())
-            elif not ref.netloc: # internal links
+                log_ugly(
+                    link=link,
+                    reason='is an internal link but has a domain',
+                    suggestion=urlparse(link.linkurl.resolved)
+                    ._replace(scheme='', netloc='')
+                    .geturl(),
+                )
+            elif not ref.netloc:  # internal links
                 src_ver = is_doc_url(link.pageurl)
                 dst_ver = is_doc_url(link.linkurl)
                 if src_ver and dst_ver and (dst_ver != src_ver):
                     # Mismatched docs versions
-                    log_ugly(link=link,
-                             reason=f'is a link from docs version={src_ver} to docs version={dst_ver}')
+                    log_ugly(
+                        link=link,
+                        reason=f'is a link from docs version={src_ver} to docs version={dst_ver}',
+                    )
+
 
 def main(urls: Sequence[str]) -> None:
     checker = Checker(domain=urlparse(urls[0]).netloc)
