@@ -34,9 +34,6 @@ class LinkURL:
     def parse(self, ref: str) -> 'LinkURL':
         return LinkURL(ref, base=self)
 
-    def __str__(self) -> str:
-        return self.resolved
-
 
 class LinkResult(NamedTuple):
     url: LinkURL
@@ -59,7 +56,7 @@ class Checker:
     _done: Set[str] = set()
 
     def __init__(self):
-        self._client.mount('data:', DataAdpater())
+        self._client.mount('data:', DataAdapter())
 
     def enqueue(self, url: str) -> None:
         url = urldefrag(url).url
