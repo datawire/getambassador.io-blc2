@@ -13,34 +13,48 @@ from .httpcache import HTTPClient
 
 class LinkURL:
     base: Optional['LinkURL']
-    original: str
+    ref: str
+    _resolved: Optional[str]
 
     @property
     def resolved(self) -> str:
-        if urlparse(self.original).scheme:
-            return self.original
+        if self._resolved:
+            return self._resolved
+        if urlparse(self.ref).scheme:
+            return self.ref
         if not self.base:
-            raise Exception(
-                f"could not resolve to an absolute URL: {self.original}")
-        ret = urljoin(self.base.resolved, self.original)
+            raise Exception(f"could not resolve URL: {self.ref}: is relative, and have no base for it to be relative to")
+        ret = urljoin(self.base.resolved, self.ref)
         if not urlparse(ret).scheme:
-            raise Exception(f"could not resolve to an absolute URL: {ret}")
+            raise Exception(f"could not resolve URL: {ret}")
         return ret
 
-    def __init__(self, ref: str, base: Optional['LinkURL'] = None):
-        self.original = ref
+    def __init__(self, ref: str, base: Optional['LinkURL'] = None, resolved: Optional[str] = None ):
+        self.ref = ref
         self.base = base
+        self._resolved = resolved
 
     def parse(self, ref: str) -> 'LinkURL':
         return LinkURL(ref, base=self)
 
+    def __repr__(self) -> str:
+        parts = [f'ref={self.ref}']
+        if self.base:
+            parts += [f'base={self.base}']
+        if self._resolved:
+            parts += [f'resolved={self._resolved}']
+        return f'LinkURL({", ".join(parts)})'
+
+class BaseLinkResult(NamedTuple):
+    linkurl: LinkURL
+    broken: Optional[str]
+
 
 class LinkResult(NamedTuple):
-    url: LinkURL
+    linkurl: LinkURL
+    broken: Optional[str]
     pageurl: LinkURL
     html: bs4.element.Tag
-    broken: bool
-    broken_reason: Optional[str]
 
 
 def get_content_type(resp: requests.Response) -> str:
@@ -65,9 +79,7 @@ class BaseChecker:
 
     def run(self) -> None:
         while not self._queue.empty():
-            url = self._queue.get()
-            if url not in self._done:
-                self.check_page(url)
+            self.check_page(self._queue.get())
 
     def get_resp(self, url) -> Union[requests.Response, str]:
         resp: Union[requests.Response, str] = "HTTP_unknown"
@@ -101,31 +113,27 @@ class BaseChecker:
             self._bodycache[baseurl] = soup
         return self._bodycache[baseurl]
 
-    def is_url_broken(self, url: str) -> Optional[str]:
-        resp = self._client.get(url)
+    def is_url_broken(self, url: LinkURL) -> BaseLinkResult:
+        resp = self._client.get(url.resolved)
         if isinstance(resp, str):
-            return resp
+            return BaseLinkResult(linkurl=url, broken=resp)
+        url = LinkURL(ref=url.ref, base=url.base, resolved=resp.url)
 
-        baseurl, fragment = urldefrag(url)
+        fragment = urldefrag(url.resolved).fragment
         if fragment:
-            soup = self.get_soup(url)
+            soup = self.get_soup(url.resolved)
             if isinstance(soup, str):
-                return f"fragment: {soup}"
+                return BaseLinkResult(linkurl=url, broken=f"fragment: {soup}")
             if not soup.find(id=fragment):
-                return f"fragment: no element with that id"
+                return BaseLinkResult(linkurl=url, broken=f"fragment: no element with that id")
 
-        return None
+        return BaseLinkResult(linkurl=url, broken=None)
 
     def check_html(
         self,
-        page_url: str,
+        page_url: LinkURL,
         page_soup: BeautifulSoup,
     ) -> Iterable[LinkResult]:
-        baseurl = pageurl = LinkURL(page_url)
-        basetags = page_soup.select('base[href]')
-        if basetags:
-            baseurl = baseurl.parse(basetags[0]['href'])
-
         selectors = {
             '*': {'itemtype'},
             'a': {'href', 'ping'},
@@ -163,30 +171,81 @@ class BaseChecker:
             'video': {'poster', 'src'},
         }
 
+        base_url = page_url
+        base_tags = page_soup.select('base[href]')
+        if base_tags:
+            base_url = base_url.parse(base_tags[0]['href'])
+
         for tagname, attrs in selectors.items():
             for attr in attrs:
                 for element in page_soup.select(f"{tagname}[{attr}]"):
-                    linkurl = baseurl.parse(element[attr])
-                    broken_reason = self.is_url_broken(linkurl.resolved)
+                    link_url = base_url.parse(element[attr])
+                    inner_result = self.is_url_broken(link_url)
                     yield LinkResult(
-                        url=linkurl,
-                        pageurl=pageurl,
+                        linkurl=inner_result.linkurl,
+                        broken=inner_result.broken,
+                        pageurl=page_url,
                         html=element,
-                        broken=bool(broken_reason),
-                        broken_reason=broken_reason,
                     )
 
     def check_page(self, url: str) -> None:
-        print(f"Processing {url}")
+        # Log that we're starting
+        if url in self._done:
+            return
+        self.handle_page_starting(url)
+
+        # Resolve any redirects
+        resp = self.get_resp(url)
+        if isinstance(resp, str):
+            self.handle_page_error(url, resp)
+            return
+        page_url = LinkURL(ref=url, resolved=resp.url)
+        if urldefrag(page_url.resolved).url in self._done:
+            return
+
+        # Parse the page
         soup = self.get_soup(url)
         if isinstance(soup, str):
             self.handle_page_error(url, soup)
             return
+        
+        # Inspect the page for bad links
         for link in self.check_html(url, soup):
             self.handle_link_result(link)
 
+    def handle_page_starting(self, url: str) -> None:
+        """handle_page_starting is called when we start processing an HTML
+        page; before we fetch that page (unless it's already cached
+        from a previous link check) and before any links on that page
+        are handled.
+
+        """
+        pass
+
     def handle_link_result(self, result: LinkResult) -> None:
+        """handle_link_result is called for each link found in a page.
+
+        Using a Python-ish pseudo-code notation to express the
+        structure and semantics of the result:
+
+            class LinkResult(NamedTuple):
+                linkurl: class LinkURL(NamedTuple):
+                    base:     Optional[LinkURL]  # Probably the same URL as pageurl below, but possibly different if <base href> (in which case result.linkurl.base.base is the original pageurl)
+                    ref:      str                # The original form of the URL reference (e.g. 'href') from the page being checked
+                    resolved: str                # 'ref', but resolved to be an absolute URL; both by combining it with 'base', and by following any redirects
+                pageurl: NamedTuple:         # The absolute URL of the page that this link was found on
+                    ref:      str                # The original request URL
+                    resolved: str                # 'ref', but after following any redirects 
+                html:    bs4.element.Tag     # The HTML tag that contained the link
+                broken:  Optional[str]       # Why the link is broken (or None if it isn't broken)
+        """
         pass
 
     def handle_page_error(self, url: str, err: str) -> None:
-        print(f"error: {url}: {err}")
+        """handle_page_error is called whenever we encounter an error
+        proccessing a page that we've been told to check for broken
+        links on.  This could be because we failed to fetch the page,
+        or it could be because of an HTML-parsing error.
+
+        """
+        pass
