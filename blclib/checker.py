@@ -7,6 +7,7 @@ import bs4.element
 import requests
 from bs4 import BeautifulSoup
 
+from .data_uri import DataAdapter
 from .httpcache import HTTPClient
 
 
@@ -33,6 +34,9 @@ class LinkURL:
     def parse(self, ref: str) -> 'LinkURL':
         return LinkURL(ref, base=self)
 
+    def __str__(self) -> str:
+        return self.resolved
+
 
 class LinkResult(NamedTuple):
     url: LinkURL
@@ -51,8 +55,11 @@ class Checker:
 
     _client = HTTPClient()
     _bodycache: Dict[str, Union[BeautifulSoup, str]] = dict()
-    _queue: Queue[str] = Queue()
+    _queue: 'Queue[str]' = Queue()
     _done: Set[str] = set()
+
+    def __init__(self):
+        self._client.mount('data:', DataAdpater())
 
     def enqueue(self, url: str) -> None:
         url = urldefrag(url).url
@@ -158,7 +165,7 @@ class Checker:
             'video': {'poster', 'src'},
         }
 
-        for tagname, attrs in selectors:
+        for tagname, attrs in selectors.items():
             for attr in attrs:
                 for element in page_soup.select(f"{tagname}[{attr}]"):
                     link_url = baseurl.parse(element[attr])
