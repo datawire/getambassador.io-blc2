@@ -1,6 +1,7 @@
+import re
 from http.client import HTTPMessage
 from queue import Queue
-from typing import Container, Dict, Mapping, Optional, Set, Text, Tuple, Union
+from typing import Container, Dict, List, Mapping, Optional, Set, Text, Tuple, Union
 from urllib.parse import urldefrag
 
 # import bs4.element
@@ -37,6 +38,21 @@ class HTTPClient(BaseHTTPClient):
     ) -> None:
         assert request.url
         self._checker.handle_request_starting(request.url)
+
+
+def url_from_meta_http_equiv_refresh(input: str) -> Optional[str]:
+    # https://html.spec.whatwg.org/multipage/semantics.html#attr-meta-http-equiv-refresh
+
+    # step 1 - step 11.7
+    urlString = re.sub(r"^\s*[0-9.]*\s*[;,]?\s*(?:[Uu][Rr][Ll]\s*=\s*)?", '', input)
+    if urlString == input:
+        return None
+    # step 11.8-11.10
+    if urlString.startswith('"'):
+        urlString = re.sub('".*', '', urlString[1:])
+    elif urlString.startswith("'"):
+        urlString = re.sub("'.*", '', urlString[1:])
+    return urlString
 
 
 class BaseChecker:
@@ -133,6 +149,8 @@ class BaseChecker:
         return None
 
     def _process_html(self, page_url: URLReference, page_soup: BeautifulSoup,) -> None:
+        # This list of selectors is the union of all lists in
+        # https://github.com/stevenvachon/broken-link-checker/blob/master/lib/internal/tags.js
         selectors = {
             '*': {'itemtype'},
             'a': {'href', 'ping'},
@@ -176,10 +194,29 @@ class BaseChecker:
             base_url = base_url.parse(base_tags[0]['href'])
 
         for tagname, attrs in selectors.items():
-            for attr in attrs:
-                for element in page_soup.select(f"{tagname}[{attr}]"):
-                    link_url = base_url.parse(element[attr])
-                    self.enqueue(Link(linkurl=link_url, pageurl=page_url, html=element))
+            for attrname in attrs:
+                for element in page_soup.select(f"{tagname}[{attrname}]"):
+                    attrvalue = element[attrname]
+                    url_strs: List[str] = []
+
+                    if attrname == 'content':
+                        if element.get('http-equiv', '').lower() == 'refresh':
+                            # https://html.spec.whatwg.org/multipage/semantics.html#attr-meta-http-equiv-refresh
+                            url = url_from_meta_http_equiv_refresh(attrvalue)
+                            if url:
+                                url_strs = [url]
+                    elif attrname == 'ping':
+                        # https://html.spec.whatwg.org/multipage/links.html#ping
+                        url_strs = [attrvalue.split()]
+                    elif attrname == 'srcset':
+                        # https://html.spec.whatwg.org/multipage/images.html#srcset-attributes
+                        url_strs = [desc.split()[0] for desc in attrvalue.split(',')]
+                    else:
+                        url_strs = [attrvalue]
+
+                    for url_str in url_strs:
+                        link_url = base_url.parse(url_str)
+                        self.enqueue(Link(linkurl=link_url, pageurl=page_url, html=element))
 
     def _check_page(self, page_url: URLReference) -> None:
         # Log that we're starting
