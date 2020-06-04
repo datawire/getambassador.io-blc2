@@ -6,18 +6,6 @@ from urllib.parse import urlparse
 from blclib import BaseChecker, Link, URLReference
 
 
-def log_broken(link: Link, reason: str) -> None:
-    msg = f'Page {link.pageurl.resolved} has a broken link: "{link.linkurl.ref}" ({reason})'
-    print(msg)
-
-
-def log_ugly(link: Link, reason: str, suggestion: Optional[str] = None) -> None:
-    msg = f'Page {link.pageurl.resolved} has an ugly link: "{link.linkurl.ref}" {reason}'
-    if suggestion:
-        msg += f' (did you mean "{suggestion}"?)'
-    print(msg)
-
-
 def is_doc_url(url: URLReference) -> Optional[str]:
     """Returns the docs version if 'url' is a docs-url, or None if 'url' is not a docs-url."""
     parsed = urlparse(url.resolved)
@@ -36,16 +24,41 @@ def urlpath(url: str) -> str:
 class Checker(BaseChecker):
     domain: str
 
+    stats_requests: int = 0
+    stats_pages: int = 0
+    stats_errors: int = 0
+    stats_links_total: int = 0
+    stats_links_bad: int = 0
+
     def __init__(self, domain: str):
         self.domain = domain
 
+    def log_broken(self, link: Link, reason: str) -> None:
+        self.stats_links_bad += 1
+        msg = f'Page {link.pageurl.resolved} has a broken link: "{link.linkurl.ref}" ({reason})'
+        print(msg)
+
+    def log_ugly(self, link: Link, reason: str, suggestion: Optional[str] = None) -> None:
+        self.stats_links_bad += 1
+        msg = f'Page {link.pageurl.resolved} has an ugly link: "{link.linkurl.ref}" {reason}'
+        if suggestion:
+            msg += f' (did you mean "{suggestion}"?)'
+        print(msg)
+
+    def handle_request_starting(self, url: str) -> None:
+        if not url.startswith('data:'):
+            self.stats_requests += 1
+
     def handle_page_starting(self, url: str) -> None:
+        self.stats_pages += 1
         print(f"Processing {url}")
 
     def handle_page_error(self, url: str, err: str) -> None:
+        self.stats_errors += 1
         print(f"error: {url}: {err}")
 
     def handle_link_result(self, link: Link, broken: Optional[str]) -> None:
+        self.stats_links_total += 1
         if broken:
             # Handle broken links
             if (
@@ -74,7 +87,7 @@ class Checker(BaseChecker):
             ):
                 pass  # skip
             else:
-                log_broken(link, broken)
+                self.log_broken(link, broken)
         else:
             # Crawl.
             if urlparse(link.linkurl.resolved).netloc == self.domain:
@@ -85,7 +98,7 @@ class Checker(BaseChecker):
                 link.html.tagName == 'link' and link.html['rel'] == 'canonical'
             ):  # canonical links
                 if ref.netloc != 'www.getambassador.io':
-                    log_ugly(
+                    self.log_ugly(
                         link=link,
                         reason='is a canonical but does not point at www.getambassador.io',
                         suggestion=urlparse(link.linkurl.resolved)
@@ -100,7 +113,7 @@ class Checker(BaseChecker):
             ):  # should-be-internal links
                 # Links within getambassador.io should not mention the scheme or domain
                 # (this way, they work in netlify previews)
-                log_ugly(
+                self.log_ugly(
                     link=link,
                     reason='is an internal link but has a domain',
                     suggestion=urlparse(link.linkurl.resolved)
@@ -112,18 +125,26 @@ class Checker(BaseChecker):
                 dst_ver = is_doc_url(link.linkurl)
                 if src_ver and dst_ver and (dst_ver != src_ver):
                     # Mismatched docs versions
-                    log_ugly(
+                    self.log_ugly(
                         link=link,
                         reason=f'is a link from docs version={src_ver} to docs version={dst_ver}',
                     )
 
 
-def main(urls: Sequence[str]) -> None:
+def main(urls: Sequence[str]) -> int:
     checker = Checker(domain=urlparse(urls[0]).netloc)
     for url in urls:
         checker.enqueue(URLReference(ref=url))
     checker.run()
+    print("Summary:")
+    print(
+        f"  Actions: Sent {checker.stats_requests} HTTP requests in order to check {checker.stats_links_total} links on {checker.stats_pages} pages"
+    )
+    print(
+        f"  Results: Encountered {checker.stats_errors} errors and {checker.stats_links_bad} bad links"
+    )
+    return 1 if (checker.stats_errors + checker.stats_links_bad) > 0 else 0
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    sys.exit(main(sys.argv[1:]))

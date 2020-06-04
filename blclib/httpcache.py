@@ -22,13 +22,9 @@ class HTTPClient(requests.Session):
                 self,
                 req: requests.models.PreparedRequest,
                 stream: bool = False,
-                timeout: Union[
-                    None, float, Tuple[float, float], Tuple[float, None]
-                ] = None,
+                timeout: Union[None, float, Tuple[float, float], Tuple[float, None]] = None,
                 verify: Union[bool, str] = True,
-                cert: Union[
-                    None, Union[bytes, Text], Container[Union[bytes, Text]]
-                ] = None,
+                cert: Union[None, Union[bytes, Text], Container[Union[bytes, Text]]] = None,
                 proxies: Optional[Mapping[str, str]] = None,
             ) -> requests.models.Response:
                 cachekey = client._cache_key(req)

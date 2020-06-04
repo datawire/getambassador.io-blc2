@@ -52,10 +52,7 @@ class BeautifulSoup(Tag):
     def pushTag(self, tag: Any) -> None: ...
     def endData(self, containerClass: Optional[Any] = ...) -> None: ...
     def object_was_parsed(
-        self,
-        o: Any,
-        parent: Optional[Any] = ...,
-        most_recent_element: Optional[Any] = ...,
+        self, o: Any, parent: Optional[Any] = ..., most_recent_element: Optional[Any] = ...,
     ) -> None: ...
     def handle_starttag(
         self,
