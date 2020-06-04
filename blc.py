@@ -50,11 +50,9 @@ class Checker(BaseChecker):
     def handle_request_starting(self, url: str) -> None:
         if not url.startswith('data:'):
             self.stats_requests += 1
-            print(f"GET {url}")
 
     def handle_page_starting(self, url: str) -> None:
         self.stats_pages += 1
-        print(f"Processing {url}")
 
     def handle_page_error(self, url: str, err: str) -> None:
         self.stats_errors += 1
