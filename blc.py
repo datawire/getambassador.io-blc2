@@ -103,9 +103,6 @@ class Checker(BaseChecker):
             else:
                 self.log_broken(link, broken)
         else:
-            # Crawl.
-            if urlparse(link.linkurl.resolved).netloc == self.domain:
-                self.enqueue(link.linkurl)
             # Check for "ugly" (semantically-broken, but not-technically-broken) links.
             ref = urlparse(link.linkurl.ref)
             if (
@@ -140,6 +137,9 @@ class Checker(BaseChecker):
                         link=link,
                         reason=f'is a link from docs version={src_ver} to docs version={dst_ver}',
                     )
+            # Crawl.
+            if urlparse(link.linkurl.resolved).netloc == self.domain:
+                self.enqueue(link.linkurl)
 
 
 def main(urls: Sequence[str]) -> int:

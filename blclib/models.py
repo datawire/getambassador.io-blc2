@@ -57,6 +57,18 @@ class URLReference:
             parts += [f'resolved={self._resolved}']
         return f'URLReference({", ".join(parts)})'
 
+    def __hash__(self) -> int:
+        return (self.base, self.ref, self._resolved).__hash__()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, URLReference):
+            return (
+                self.base == other.base
+                and self.ref == other.ref
+                and self.resolved == other.resolved
+            )
+        return False
+
 
 class Link(NamedTuple):
     linkurl: URLReference

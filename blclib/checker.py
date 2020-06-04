@@ -60,6 +60,7 @@ class BaseChecker:
     _client: HTTPClient
     _bodycache: Dict[str, Union[BeautifulSoup, str]] = dict()
     _queue: 'Queue[Union[Link,URLReference]]' = Queue()
+    _queued_pages: Set[str] = set()
     _done_pages: Set[str] = set()
 
     def __init__(self) -> None:
@@ -77,6 +78,11 @@ class BaseChecker:
             handle_link_result().
 
         """
+        if isinstance(task, URLReference):
+            clean_url = urldefrag(task.resolved).url
+            if (clean_url in self._done_pages) or (clean_url in self._queued_pages):
+                return
+            self._queued_pages.add(clean_url)
         self._queue.put(task)
 
     def run(self) -> None:
@@ -218,31 +224,35 @@ class BaseChecker:
                         link_url = base_url.parse(url_str)
                         self.enqueue(Link(linkurl=link_url, pageurl=page_url, html=element))
 
-    def _check_page(self, page_url: URLReference) -> None:
-        # Log that we're starting
-        if urldefrag(page_url.resolved) in self._done_pages:
+    def _check_page(self, url: URLReference) -> None:
+        # Handle redirects
+        resp = self._get_resp(url.resolved)
+        if isinstance(resp, str):
+            clean_url = urldefrag(url.resolved).url
+            self._done_pages.add(clean_url)
+            self.handle_page_starting(clean_url)
+            self.handle_page_error(clean_url, resp)
             return
-        self.handle_page_starting(page_url.resolved)
+        urls = set(urldefrag(r.url).url for r in ([resp] + resp.history))
+        url = url._replace(resolved=resp.url)
+        clean_url = urldefrag(url.resolved).url
 
-        # Resolve any redirects
-        page_resp = self._get_resp(page_url.resolved)
-        if isinstance(page_resp, str):
-            self.handle_page_error(page_url.resolved, page_resp)
-            self._done_pages.add(page_url.resolved)
+        # Handle short-circuiting
+        if clean_url in self._done_pages:
             return
-        page_url = page_url._replace(resolved=page_resp.url)
-        if urldefrag(page_url.resolved).url in self._done_pages:
-            return
+        self._done_pages.update(urls)
+
+        # Log that we're starting
+        self.handle_page_starting(clean_url)
 
         # Parse the page
-        page_soup = self._get_soup(page_url.resolved)
-        if isinstance(page_soup, str):
-            self.handle_page_error(page_url.resolved, page_soup)
-            self._done_pages.add(page_url.resolved)
+        soup = self._get_soup(clean_url)
+        if isinstance(soup, str):
+            self.handle_page_error(clean_url, soup)
             return
 
         # Inspect the page for bad links
-        self._process_html(page_url, page_soup)
+        self._process_html(url, soup)
 
     def handle_request_starting(self, url: str) -> None:
         """handle_request_starting is a hook; called before we send a
