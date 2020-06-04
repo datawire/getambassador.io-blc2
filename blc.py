@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import re
 import sys
 from typing import Optional, Sequence
@@ -30,8 +31,9 @@ class Checker(BaseChecker):
     stats_links_total: int = 0
     stats_links_bad: int = 0
 
-    def __init__(self, domain: str):
+    def __init__(self, domain: str) -> None:
         self.domain = domain
+        super().__init__()
 
     def log_broken(self, link: Link, reason: str) -> None:
         self.stats_links_bad += 1
@@ -48,6 +50,7 @@ class Checker(BaseChecker):
     def handle_request_starting(self, url: str) -> None:
         if not url.startswith('data:'):
             self.stats_requests += 1
+            print(f"GET {url}")
 
     def handle_page_starting(self, url: str) -> None:
         self.stats_pages += 1
@@ -56,6 +59,17 @@ class Checker(BaseChecker):
     def handle_page_error(self, url: str, err: str) -> None:
         self.stats_errors += 1
         print(f"error: {url}: {err}")
+
+    def is_internal_domain(self, netloc: str) -> bool:
+        if netloc == 'blog.getambassador.io':
+            return False
+        if netloc == 'getambassador.io':
+            return True
+        if netloc.endswith('.getambassador.io'):
+            return True
+        if netloc == self.domain:
+            return True
+        return False
 
     def handle_link_result(self, link: Link, broken: Optional[str]) -> None:
         self.stats_links_total += 1
@@ -107,10 +121,7 @@ class Checker(BaseChecker):
                     )
                 # Other than that, the canonicals don't need to be inspected more, because they're
                 # allowed (expected!) to be cross-version.
-            elif (
-                re.match(r'^(.*\.)?getambassador.io$', ref.netloc)
-                or ref.netloc == self.domain
-            ):  # should-be-internal links
+            elif self.is_internal_domain(ref.netloc):  # should-be-internal links
                 # Links within getambassador.io should not mention the scheme or domain
                 # (this way, they work in netlify previews)
                 self.log_ugly(
@@ -147,4 +158,8 @@ def main(urls: Sequence[str]) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except KeyboardInterrupt as err:
+        print(err, file=sys.stderr)
+        sys.exit(130)

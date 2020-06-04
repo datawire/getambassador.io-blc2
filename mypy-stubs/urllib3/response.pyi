@@ -1,5 +1,7 @@
 import io
-from typing import Any, Optional
+from typing import Any, BinaryIO, Optional, Text, TextIO, Union
+
+_Body = Union[Text, bytes, TextIO, BinaryIO]
 
 log: Any
 
@@ -46,7 +48,7 @@ class HTTPResponse(io.IOBase):
     length_remaining: Any = ...
     def __init__(
         self,
-        body: str = ...,
+        body: _Body = ...,
         headers: Optional[Any] = ...,
         status: int = ...,
         version: int = ...,

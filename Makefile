@@ -1,5 +1,5 @@
 run: requirements.txt.stamp
-	. ./venv/bin/activate && ./blc.py
+	. ./venv/bin/activate && ./blc.py '$(TARGET)'
 .PHONY: run
 
 mypy: dev_requirements.txt.stamp

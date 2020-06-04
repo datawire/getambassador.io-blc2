@@ -19,9 +19,9 @@ def get_content_type(resp: requests.Response) -> str:
 
 
 class HTTPClient(BaseHTTPClient):
-    _checker: BaseChecker
+    _checker: 'BaseChecker'
 
-    def __init__(self, checker: BaseChecker):
+    def __init__(self, checker: 'BaseChecker'):
         self._checker = checker
         super().__init__()
         self.mount('data:', DataAdapter())
@@ -46,7 +46,7 @@ class BaseChecker:
     _queue: 'Queue[Union[Link,URLReference]]' = Queue()
     _done_pages: Set[str] = set()
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._client = HTTPClient(self)
 
     def enqueue(self, task: Union[Link, URLReference]) -> None:
@@ -83,7 +83,7 @@ class BaseChecker:
             resp = self._client.get(url)
             if resp.status_code != 200:
                 resp = f"HTTP_{resp.status_code}"
-        except BaseException as err:
+        except Exception as err:
             resp = f"{err}"
         return resp
 
@@ -102,7 +102,7 @@ class BaseChecker:
                 if content_type == 'text/html':
                     try:
                         soup = BeautifulSoup(resp.text, 'html.parser')
-                    except BaseException as err:
+                    except Exception as err:
                         soup = f"{err}"
                 else:
                     soup = f"unknown Content-Type: {content_type}"
@@ -116,7 +116,7 @@ class BaseChecker:
 
     def _is_link_broken(self, link: Link) -> Optional[str]:
         # Resolve redirects
-        resp = self._client.get(link.linkurl.resolved)
+        resp = self._get_resp(link.linkurl.resolved)
         if isinstance(resp, str):
             return resp
         link = link._replace(linkurl=link.linkurl._replace(resolved=resp.url))
