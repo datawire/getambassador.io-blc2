@@ -1,14 +1,19 @@
-mypy: venv
+run: requirements.txt.stamp
+	. ./venv/bin/activate && ./blc.py
+.PHONY: run
+
+mypy: dev_requirements.txt.stamp
 	. ./venv/bin/activate && MYPYPATH=$(CURDIR)/mypy-stubs mypy .
 .PHONY: mypy
 
-venv/bin/pip:
-	virtualenv venv
-venv: venv/bin/pip requirements.txt
-	./venv/bin/pip install -r requirements.txt
-	touch $@
-
-format: venv
+format: dev_requirements.txt.stamp
 	. ./venv/bin/activate && isort $$(git ls-files ':*.py' ':*.pyi')
 	. ./venv/bin/activate && black --line-length=89 --target-version=py36 --skip-string-normalization .
 .PHONY: format
+
+venv/bin/pip:
+	virtualenv venv
+%.txt.stamp: %.txt venv/bin/pip
+	./venv/bin/pip install -r $<
+	date > $@
+dev_requirements.txt.stamp: requirements.txt.stamp
