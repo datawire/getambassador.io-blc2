@@ -123,7 +123,7 @@ class BaseChecker:
                 content_type = get_content_type(resp)
                 if content_type == 'text/html':
                     try:
-                        soup = BeautifulSoup(resp.text, 'html.parser')
+                        soup = BeautifulSoup(resp.text, 'lxml')
                     except Exception as err:
                         soup = f"{err}"
                 else:
@@ -154,7 +154,7 @@ class BaseChecker:
 
         return None
 
-    def _process_html(self, page_url: URLReference, page_soup: BeautifulSoup,) -> None:
+    def _process_html(self, page_url: URLReference, page_soup: BeautifulSoup) -> None:
         # This list of selectors is the union of all lists in
         # https://github.com/stevenvachon/broken-link-checker/blob/master/lib/internal/tags.js
         selectors = {
@@ -224,35 +224,55 @@ class BaseChecker:
                         link_url = base_url.parse(url_str)
                         self.enqueue(Link(linkurl=link_url, pageurl=page_url, html=element))
 
-    def _check_page(self, url: URLReference) -> None:
+    def _check_page(self, page_url: URLReference) -> None:
         # Handle redirects
-        resp = self._get_resp(url.resolved)
-        if isinstance(resp, str):
-            clean_url = urldefrag(url.resolved).url
-            self._done_pages.add(clean_url)
-            self.handle_page_starting(clean_url)
-            self.handle_page_error(clean_url, resp)
+        page_resp = self._get_resp(page_url.resolved)
+        if isinstance(page_resp, str):
+            clean_page_url = urldefrag(page_url.resolved).url
+            self._done_pages.add(clean_page_url)
+            self.handle_page_starting(clean_page_url)
+            self.handle_page_error(clean_page_url, page_resp)
             return
-        urls = set(urldefrag(r.url).url for r in ([resp] + resp.history))
-        url = url._replace(resolved=resp.url)
-        clean_url = urldefrag(url.resolved).url
+        page_urls = set(urldefrag(r.url).url for r in ([page_resp] + page_resp.history))
+        page_url = page_url._replace(resolved=page_resp.url)
+        page_clean_url = urldefrag(page_url.resolved).url
 
         # Handle short-circuiting
-        if clean_url in self._done_pages:
+        if page_clean_url in self._done_pages:
             return
-        self._done_pages.update(urls)
+        self._done_pages.update(page_urls)
 
         # Log that we're starting
-        self.handle_page_starting(clean_url)
+        self.handle_page_starting(page_clean_url)
 
-        # Parse the page
-        soup = self._get_soup(clean_url)
-        if isinstance(soup, str):
-            self.handle_page_error(clean_url, soup)
-            return
+        # Inspect the page for bad links #################################################
 
-        # Inspect the page for bad links
-        self._process_html(url, soup)
+        content_type = get_content_type(page_resp)
+        if content_type == 'application/javascript':
+            # TODO: check for ES6 imports
+            pass
+        elif content_type == 'application/json':
+            pass  # nothing to do
+        elif content_type == 'application/manifest+json':
+            # TODO: https://w3c.github.io/manifest/
+            pass
+        elif content_type == 'application/pdf':
+            # TODO: check PDFs for links
+            pass
+        elif content_type == 'application/x-yaml':
+            pass  # nothing to do
+        elif content_type == 'image/jpeg':
+            pass  # nothing to do
+        elif content_type == 'image/png':
+            pass  # nothing to do
+        elif content_type == 'text/html':
+            page_soup = self._get_soup(page_clean_url)
+            if isinstance(page_soup, str):
+                self.handle_page_error(clean_page_url, page_soup)
+                return
+            self._process_html(page_url, page_soup)
+        else:
+            self.handle_page_error(clean_page_url, f"unknown Content-Type: {content_type}")
 
     def handle_request_starting(self, url: str) -> None:
         """handle_request_starting is a hook; called before we send a
