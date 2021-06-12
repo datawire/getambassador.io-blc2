@@ -51,8 +51,7 @@ class HTTPClient(requests.Session):
                         proxies=proxies,
                     )
                     if (
-                        resp
-                        and resp.status_code == 429
+                        resp.status_code == 429
                         and resp.headers.get('retry-after', 'x').isnumeric()
                     ):
                         secs = int(resp.headers.get('retry-after'))

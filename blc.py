@@ -49,8 +49,8 @@ class Checker(BaseChecker):
         print(msg)
 
     def handle_request_starting(self, url: str) -> None:
-        print(f"GET {url}")
         if not url.startswith('data:'):
+            print(f"GET {url}")
             self.stats_requests += 1
 
     def handle_page_starting(self, url: str) -> None:
@@ -79,10 +79,16 @@ class Checker(BaseChecker):
         self.stats_links_total += 1
         if broken:
             hostname = urlparse(link.linkurl.resolved).hostname
-            if hostname and (
-                hostname.endswith(".default")
-                or hostname == "localhost"
-                or hostname == "verylargejavaservice"
+            netloc = urlparse(link.linkurl.resolved).netloc
+            if (
+                hostname
+                and netloc
+                and (
+                    hostname.endswith(".default")
+                    or netloc == "localhost:8080"
+                    or hostname == "verylargejavaservice"
+                    or hostname == "web-app.emojivoto"
+                )
             ):
                 pass  # skip
             else:
