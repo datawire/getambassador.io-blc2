@@ -166,7 +166,7 @@ class BaseChecker:
             soup = self._get_soup(link.linkurl.resolved)
             if isinstance(soup, str):
                 return f"fragment: {soup}"
-            if not (soup.find(id=fragment) or soup.find(name=fragment)):
+            if not (soup.find(id=fragment) or soup.find("a", {"name": fragment})):
                 return f"fragment: no element with that id/name"
 
         return None
