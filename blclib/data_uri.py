@@ -41,7 +41,10 @@ class DataAdapter(BaseAdapter):
         u3resp = HTTPResponse(
             status=200,
             reason='OK',
-            headers={'Content-Type': mediatype, 'Content-Length': str(len(data_bytes)),},
+            headers={
+                'Content-Type': mediatype,
+                'Content-Length': str(len(data_bytes)),
+            },
             body=io.BytesIO(data_bytes),
         )
 

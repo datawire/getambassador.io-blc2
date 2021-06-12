@@ -1,4 +1,5 @@
 from copy import deepcopy
+from time import sleep
 from typing import Callable, Container, Dict, Mapping, Optional, Text, Tuple, Union
 from urllib.parse import urldefrag
 
@@ -49,6 +50,30 @@ class HTTPClient(requests.Session):
                         cert=cert,
                         proxies=proxies,
                     )
+                    if (
+                        resp
+                        and resp.status_code == 429
+                        and resp.headers.get('retry-after', 'x').isnumeric()
+                    ):
+                        secs = int(resp.headers.get('retry-after'))
+                        client.hook_before_sleep(
+                            secs,
+                            req,
+                            stream=stream,
+                            timeout=timeout,
+                            verify=verify,
+                            cert=cert,
+                            proxies=proxies,
+                        )
+                        sleep(secs)
+                        return self.send(
+                            req,
+                            stream=stream,
+                            timeout=timeout,
+                            verify=verify,
+                            cert=cert,
+                            proxies=proxies,
+                        )
                     if cachekey:
                         client._cache[cachekey] = resp
 
@@ -72,6 +97,22 @@ class HTTPClient(requests.Session):
     ) -> None:
         """Override this to provide a callback that is called before making a
         (non-cached) request.
+
+        """
+        pass
+
+    def hook_before_sleep(
+        self,
+        retry_after: int,
+        request: requests.models.PreparedRequest,
+        stream: bool = False,
+        timeout: Union[None, float, Tuple[float, float], Tuple[float, None]] = None,
+        verify: Union[bool, str] = True,
+        cert: Union[None, Union[bytes, Text], Container[Union[bytes, Text]]] = None,
+        proxies: Optional[Mapping[str, str]] = None,
+    ) -> None:
+        """Override this to provide a callback that is called before sleeping
+        to back-off from an overloaded server.
 
         """
         pass

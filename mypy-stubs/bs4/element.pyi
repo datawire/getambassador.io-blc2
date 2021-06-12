@@ -8,7 +8,10 @@ PYTHON_SPECIFIC_ENCODINGS: Any
 
 class NamespacedAttribute(str):
     def __new__(
-        cls, prefix: Any, name: Optional[Any] = ..., namespace: Optional[Any] = ...,
+        cls,
+        prefix: Any,
+        name: Optional[Any] = ...,
+        namespace: Optional[Any] = ...,
     ): ...
 
 class AttributeValueWithCharsetSubstitution(str): ...
@@ -284,10 +287,16 @@ class Tag(PageElement):
         formatter: str = ...,
     ): ...
     def encode_contents(
-        self, indent_level: Optional[Any] = ..., encoding: Any = ..., formatter: str = ...,
+        self,
+        indent_level: Optional[Any] = ...,
+        encoding: Any = ...,
+        formatter: str = ...,
     ): ...
     def renderContents(
-        self, encoding: Any = ..., prettyPrint: bool = ..., indentLevel: int = ...,
+        self,
+        encoding: Any = ...,
+        prettyPrint: bool = ...,
+        indentLevel: int = ...,
     ): ...
     def find(
         self,

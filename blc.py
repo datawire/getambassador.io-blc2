@@ -30,6 +30,7 @@ class Checker(BaseChecker):
     stats_errors: int = 0
     stats_links_total: int = 0
     stats_links_bad: int = 0
+    stats_sleep: int = 0
 
     def __init__(self, domain: str) -> None:
         self.domain = domain
@@ -57,6 +58,10 @@ class Checker(BaseChecker):
     def handle_page_error(self, url: str, err: str) -> None:
         self.stats_errors += 1
         print(f"error: {url}: {err}")
+
+    def handle_backoff(self, url: str, secs: int) -> None:
+        self.stats_sleep += secs
+        print(f"backoff: {url}: retrying after {secs} seconds")
 
     def is_internal_domain(self, netloc: str) -> bool:
         if netloc == 'blog.getambassador.io':
@@ -147,7 +152,7 @@ def main(urls: Sequence[str]) -> int:
     checker.run()
     print("Summary:")
     print(
-        f"  Actions: Sent {checker.stats_requests} HTTP requests in order to check {checker.stats_links_total} links on {checker.stats_pages} pages"
+        f"  Actions: Sent {checker.stats_requests} HTTP requests and slept for {checker.stats_sleep} seconds in order to check {checker.stats_links_total} links on {checker.stats_pages} pages"
     )
     print(
         f"  Results: Encountered {checker.stats_errors} errors and {checker.stats_links_bad} bad links"

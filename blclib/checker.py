@@ -1,4 +1,5 @@
 import re
+import time
 from http.client import HTTPMessage
 from queue import Queue
 from typing import Container, Dict, List, Mapping, Optional, Set, Text, Tuple, Union
@@ -38,6 +39,19 @@ class HTTPClient(BaseHTTPClient):
     ) -> None:
         assert request.url
         self._checker.handle_request_starting(request.url)
+
+    def hook_before_sleep(
+        self,
+        retry_after: int,
+        request: requests.models.PreparedRequest,
+        stream: bool = False,
+        timeout: Union[None, float, Tuple[float, float], Tuple[float, None]] = None,
+        verify: Union[bool, str] = True,
+        cert: Union[None, Union[bytes, Text], Container[Union[bytes, Text]]] = None,
+        proxies: Optional[Mapping[str, str]] = None,
+    ) -> None:
+        assert request.url
+        self._checker.handle_backoff(request.url, retry_after)
 
 
 def url_from_meta_http_equiv_refresh(input: str) -> Optional[str]:
@@ -100,17 +114,20 @@ class BaseChecker:
                 assert False
 
     def _get_resp(self, url: str) -> Union[requests.Response, str]:
-        resp: Union[requests.Response, str] = "HTTP_unknown"
         try:
-            resp = self._client.get(url)
+            resp: requests.Response = self._client.get(url)
             if resp.status_code != 200:
-                resp = f"HTTP_{resp.status_code}"
+                reterr = f"HTTP_{resp.status_code}"
+                if resp.status_code == 429 or int(resp.status_code / 100) == 5:
+                    self.handle_page_error(url, reterr)
+                return reterr
+            return resp
         except Exception as err:
-            resp = f"{err}"
-        return resp
+            reterr = f"{err}"
+            self.handle_page_error(url, reterr)
+            return reterr
 
     def _get_soup(self, url: str) -> Union[BeautifulSoup, str]:
-
         """returns a BeautifulSoup on success, or an error string on failure."""
         baseurl = urldefrag(url).url
         if baseurl not in self._bodycache:
@@ -228,10 +245,10 @@ class BaseChecker:
         # Handle redirects
         page_resp = self._get_resp(page_url.resolved)
         if isinstance(page_resp, str):
-            clean_page_url = urldefrag(page_url.resolved).url
-            self._done_pages.add(clean_page_url)
-            self.handle_page_starting(clean_page_url)
-            self.handle_page_error(clean_page_url, page_resp)
+            page_clean_url = urldefrag(page_url.resolved).url
+            self._done_pages.add(page_clean_url)
+            self.handle_page_starting(page_clean_url)
+            self.handle_page_error(page_clean_url, page_resp)
             return
         page_urls = set(urldefrag(r.url).url for r in ([page_resp] + page_resp.history))
         page_url = page_url._replace(resolved=page_resp.url)
@@ -256,6 +273,9 @@ class BaseChecker:
         elif content_type == 'application/manifest+json':
             # TODO: https://w3c.github.io/manifest/
             pass
+        elif content_type == 'image/svg+xml':
+            # TODO: check SVGs for links
+            pass
         elif content_type == 'application/pdf':
             # TODO: check PDFs for links
             pass
@@ -268,11 +288,11 @@ class BaseChecker:
         elif content_type == 'text/html':
             page_soup = self._get_soup(page_clean_url)
             if isinstance(page_soup, str):
-                self.handle_page_error(clean_page_url, page_soup)
+                self.handle_page_error(page_clean_url, page_soup)
                 return
             self._process_html(page_url, page_soup)
         else:
-            self.handle_page_error(clean_page_url, f"unknown Content-Type: {content_type}")
+            self.handle_page_error(page_clean_url, f"unknown Content-Type: {content_type}")
 
     def handle_request_starting(self, url: str) -> None:
         """handle_request_starting is a hook; called before we send a
@@ -303,7 +323,7 @@ class BaseChecker:
                     resolved: str                             # 'ref', but resolved to be an absolute URL; both by combining it with 'base', and by following any redirects
                 pageurl: NamedTuple:                      # The URL of the page that this link was found on
                     ref:      str                             # The original request URL
-                    resolved: str                             # 'ref', but after following any redirects 
+                    resolved: str                             # 'ref', but after following any redirects
                 html:    bs4.element.Tag                  # The HTML tag that contained the link
 
         The 'broken' argument is a string identifying why the link is
@@ -320,3 +340,9 @@ class BaseChecker:
 
         """
         pass
+
+    def handle_backoff(self, url: str, secs: int) -> None:
+        """handle_backoff is a hook; called whenever we encounter an HTTP 429
+        response telling us to backoff for a number of seconds.
+
+        """
