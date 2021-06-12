@@ -49,6 +49,7 @@ class Checker(BaseChecker):
         print(msg)
 
     def handle_request_starting(self, url: str) -> None:
+        print(f"GET {url}")
         if not url.startswith('data:'):
             self.stats_requests += 1
 
@@ -77,69 +78,16 @@ class Checker(BaseChecker):
     def handle_link_result(self, link: Link, broken: Optional[str]) -> None:
         self.stats_links_total += 1
         if broken:
-            # Handle broken links
-            if (
-                (link.linkurl.ref == 'https://blog.getambassador.io/search?q=canary')
-                or (link.linkurl.ref == 'https://app.datadoghq.com/apm/traces')
-                or (re.match('^HTTP_5[0-9]{2}$', broken))
-                or (
-                    broken == 'HTTP_204'
-                    and (
-                        link.linkurl.resolved.startswith('https://www.youtube.com/')
-                        or link.linkurl.resolved.startswith('https://youtu.be/')
-                    )
-                )
-                or (broken == 'HTTP_429')
-                or (
-                    broken == 'HTTP_999'
-                    and link.linkurl.resolved.startswith('https://www.linkedin.com/')
-                )
-                or (
-                    link.html.tagName == 'link'
-                    and link.html.attrName == 'href'
-                    and link.html['rel'] == 'canonical'
-                    and urlpath(link.linkurl.resolved) == urlpath(link.pageurl.resolved)
-                )
-                or (link.html.text == 'Edit this page on GitHub')
+            hostname = urlparse(link.linkurl.resolved).hostname
+            if hostname and (
+                hostname.endswith(".default")
+                or hostname == "localhost"
+                or hostname == "verylargejavaservice"
             ):
                 pass  # skip
             else:
                 self.log_broken(link, broken)
         else:
-            # Check for "ugly" (semantically-broken, but not-technically-broken) links.
-            ref = urlparse(link.linkurl.ref)
-            if (
-                link.html.tagName == 'link' and link.html['rel'] == 'canonical'
-            ):  # canonical links
-                if ref.netloc != 'www.getambassador.io':
-                    self.log_ugly(
-                        link=link,
-                        reason='is a canonical but does not point at www.getambassador.io',
-                        suggestion=urlparse(link.linkurl.resolved)
-                        ._replace(scheme='https', netloc='www.getambassador.io')
-                        .geturl(),
-                    )
-                # Other than that, the canonicals don't need to be inspected more, because they're
-                # allowed (expected!) to be cross-version.
-            elif self.is_internal_domain(ref.netloc):  # should-be-internal links
-                # Links within getambassador.io should not mention the scheme or domain
-                # (this way, they work in netlify previews)
-                self.log_ugly(
-                    link=link,
-                    reason='is an internal link but has a domain',
-                    suggestion=urlparse(link.linkurl.resolved)
-                    ._replace(scheme='', netloc='')
-                    .geturl(),
-                )
-            elif not ref.netloc:  # internal links
-                src_ver = is_doc_url(link.pageurl)
-                dst_ver = is_doc_url(link.linkurl)
-                if src_ver and dst_ver and (dst_ver != src_ver):
-                    # Mismatched docs versions
-                    self.log_ugly(
-                        link=link,
-                        reason=f'is a link from docs version={src_ver} to docs version={dst_ver}',
-                    )
             # Crawl.
             if urlparse(link.linkurl.resolved).netloc == self.domain:
                 self.enqueue(link.linkurl)
