@@ -3,7 +3,7 @@ run: requirements.txt.stamp
 .PHONY: run
 
 mypy: dev_requirements.txt.stamp
-	. ./venv/bin/activate && MYPYPATH=$(CURDIR)/mypy-stubs mypy .
+	. ./venv/bin/activate && MYPYPATH=$(CURDIR)/mypy-stubs mypy --exclude='^venv/.*' .
 .PHONY: mypy
 
 format: dev_requirements.txt.stamp
@@ -12,7 +12,7 @@ format: dev_requirements.txt.stamp
 .PHONY: format
 
 venv/bin/pip:
-	virtualenv venv
+	python -m venv venv
 %.txt.stamp: %.txt venv/bin/pip
 	./venv/bin/pip install -r $<
 	date > $@

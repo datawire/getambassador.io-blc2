@@ -1,0 +1,17 @@
+name: "Quality Assurance"
+on: [push]
+jobs:
+  "Lint":
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: make dev_requirements.txt.stamp
+      - run: make mypy
+      - run: make format
+      - name: "Dirty check"
+        run: |
+          git add .
+          if [[ -n "$(git status --porcelain)" ]]; then
+            PAGER= git diff --cached
+            exit 1
+          fi
