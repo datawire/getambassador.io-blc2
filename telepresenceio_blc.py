@@ -5,50 +5,10 @@ from typing import Optional, Sequence
 from urllib.parse import urldefrag, urlparse
 
 from blclib import BaseChecker, Link, URLReference
+from generic_blc import GenericChecker, main
 
 
-class Checker(BaseChecker):
-    domain: str
-
-    stats_requests: int = 0
-    stats_pages: int = 0
-    stats_errors: int = 0
-    stats_links_total: int = 0
-    stats_links_bad: int = 0
-    stats_sleep: int = 0
-
-    def __init__(self, domain: str) -> None:
-        self.domain = domain
-        super().__init__()
-
-    def log_broken(self, link: Link, reason: str) -> None:
-        self.stats_links_bad += 1
-        msg = f'Page {link.pageurl.resolved} has a broken link: "{link.linkurl.ref}" ({reason})'
-        print(msg)
-
-    def log_ugly(self, link: Link, reason: str, suggestion: Optional[str] = None) -> None:
-        self.stats_links_bad += 1
-        msg = f'Page {link.pageurl.resolved} has an ugly link: "{link.linkurl.ref}" {reason}'
-        if suggestion:
-            msg += f' (did you mean "{suggestion}"?)'
-        print(msg)
-
-    def handle_request_starting(self, url: str) -> None:
-        if not url.startswith('data:'):
-            print(f"GET {urldefrag(url).url}")
-            self.stats_requests += 1
-
-    def handle_page_starting(self, url: str) -> None:
-        self.stats_pages += 1
-
-    def handle_page_error(self, url: str, err: str) -> None:
-        self.stats_errors += 1
-        print(f"error: {url}: {err}")
-
-    def handle_backoff(self, url: str, secs: int) -> None:
-        self.stats_sleep += secs
-        print(f"backoff: {url}: retrying after {secs} seconds")
-
+class TelepresenceChecker(GenericChecker):
     def is_internal_domain(self, netloc: str) -> bool:
         if netloc == 'telepresence.io':
             return True
@@ -58,10 +18,10 @@ class Checker(BaseChecker):
             return True
         return False
 
-    def handle_link(self, link: Link) -> None:
+    def product_should_skip_link(self, link: Link) -> bool:
         hostname = urlparse(link.linkurl.resolved).hostname
         netloc = urlparse(link.linkurl.resolved).netloc
-        if (
+        return bool(
             hostname
             and netloc
             and (
@@ -70,68 +30,41 @@ class Checker(BaseChecker):
                 or hostname == "verylargejavaservice"
                 or hostname == "web-app.emojivoto"
             )
-        ):
-            pass  # skip
-        else:
-            # Check if this link is broken.
-            self.enqueue(link)
+        )
 
-    def handle_link_result(self, link: Link, broken: Optional[str]) -> None:
-        self.stats_links_total += 1
-        if broken:
-            self.log_broken(link, broken)
-        else:
-            # Check for "ugly" (semantically-broken, but not-technically-broken) links.
-            ref = urlparse(link.linkurl.ref)
-            if (
-                link.html.tagName == 'link' and link.html['rel'] == 'canonical'
-            ):  # canonical links
-                if ref.netloc not in ['www.getambassador.io', 'www.telepresence.io']:
-                    # It is important that the canonical links point at the production
-                    # domain, so that Netlify deploy previews don't devalue the real version.
-                    self.log_ugly(
-                        link=link,
-                        reason='is a canonical but does not point at www.getambassador.io or www.telepresence.io',
-                        suggestion=(
-                            urlparse(link.linkurl.resolved)
-                            ._replace(scheme='https', netloc='www.telepresence.io')
-                            .geturl()
-                        ),
-                    )
-            elif self.is_internal_domain(ref.netloc):  # should-be-internal links
-                # Links within telepresence.io should not mention the scheme or domain
-                # (this way, they work in Netlify previews)
+    def product_ugly_check(self, link: Link) -> None:
+        # Check for "ugly" (semantically-broken, but not-technically-broken) links.
+        ref = urlparse(link.linkurl.ref)
+        if (
+            link.html.tagName == 'link' and link.html['rel'] == 'canonical'
+        ):  # canonical links
+            if ref.netloc not in ['www.getambassador.io', 'www.telepresence.io']:
+                # It is important that the canonical links point at the production
+                # domain, so that Netlify deploy previews don't devalue the real version.
                 self.log_ugly(
                     link=link,
-                    reason='is an internal link but has a domain',
-                    suggestion=urlparse(link.linkurl.resolved)
-                    ._replace(scheme='', netloc='')
-                    .geturl(),
+                    reason='is a canonical but does not point at www.getambassador.io or www.telepresence.io',
+                    suggestion=(
+                        urlparse(link.linkurl.resolved)
+                        ._replace(scheme='https', netloc='www.telepresence.io')
+                        .geturl()
+                    ),
                 )
-            # Crawl.
-            if urlparse(link.linkurl.resolved).netloc == self.domain:
-                # Check the linked page for broken links.
-                self.enqueue(link.linkurl)
-
-
-def main(urls: Sequence[str]) -> int:
-    checker = Checker(domain=urlparse(urls[0]).netloc)
-    for url in urls:
-        checker.enqueue(URLReference(ref=url))
-    checker.run()
-    print("Summary:")
-    print(
-        f"  Actions: Sent {checker.stats_requests} HTTP requests and slept for {checker.stats_sleep} seconds in order to check {checker.stats_links_total} links on {checker.stats_pages} pages"
-    )
-    print(
-        f"  Results: Encountered {checker.stats_errors} errors and {checker.stats_links_bad} bad links"
-    )
-    return 1 if (checker.stats_errors + checker.stats_links_bad) > 0 else 0
+        elif self.is_internal_domain(ref.netloc):  # should-be-internal links
+            # Links within telepresence.io should not mention the scheme or domain
+            # (this way, they work in Netlify previews)
+            self.log_ugly(
+                link=link,
+                reason='is an internal link but has a domain',
+                suggestion=urlparse(link.linkurl.resolved)
+                ._replace(scheme='', netloc='')
+                .geturl(),
+            )
 
 
 if __name__ == "__main__":
     try:
-        sys.exit(main(sys.argv[1:]))
+        sys.exit(main(TelepresenceChecker, sys.argv[1:]))
     except KeyboardInterrupt as err:
         print(err, file=sys.stderr)
         sys.exit(130)

@@ -1,5 +1,6 @@
+PRODUCT ?= generic
 run: requirements.txt.stamp
-	. ./venv/bin/activate && PYTHONUNBUFFERED=y ./blc.py '$(TARGET)'
+	. ./venv/bin/activate && PYTHONUNBUFFERED=y ./$(PRODUCT)_blc.py '$(TARGET)'
 .PHONY: run
 
 mypy: dev_requirements.txt.stamp
