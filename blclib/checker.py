@@ -1,8 +1,8 @@
 import re
+import time
 from http.client import HTTPMessage
-from queue import Queue
 from typing import Container, Dict, List, Mapping, Optional, Set, Text, Tuple, Union
-from urllib.parse import urldefrag
+from urllib.parse import urldefrag, urlparse
 
 # import bs4.element
 import requests
@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 
 from .data_uri import DataAdapter
 from .httpcache import HTTPClient as BaseHTTPClient
+from .httpcache import RetryAfterException
 from .models import Link, URLReference
 
 
@@ -39,19 +40,6 @@ class HTTPClient(BaseHTTPClient):
         assert request.url
         self._checker.handle_request_starting(request.url)
 
-    def hook_before_sleep(
-        self,
-        retry_after: int,
-        request: requests.models.PreparedRequest,
-        stream: bool = False,
-        timeout: Union[None, float, Tuple[float, float], Tuple[float, None]] = None,
-        verify: Union[bool, str] = True,
-        cert: Union[None, Union[bytes, Text], Container[Union[bytes, Text]]] = None,
-        proxies: Optional[Mapping[str, str]] = None,
-    ) -> None:
-        assert request.url
-        self._checker.handle_backoff(request.url, retry_after)
-
 
 def url_from_meta_http_equiv_refresh(input: str) -> Optional[str]:
     # https://html.spec.whatwg.org/multipage/semantics.html#attr-meta-http-equiv-refresh
@@ -68,11 +56,20 @@ def url_from_meta_http_equiv_refresh(input: str) -> Optional[str]:
     return urlString
 
 
+def task_netloc(task: Union[Link, URLReference]) -> str:
+    if isinstance(task, Link):
+        return urlparse(task.linkurl.resolved).netloc
+    elif isinstance(task, URLReference):
+        return urlparse(task.resolved).netloc
+    else:
+        assert False
+
+
 class BaseChecker:
 
     _client: HTTPClient
     _bodycache: Dict[str, Union[BeautifulSoup, str]] = dict()
-    _queue: 'Queue[Union[Link,URLReference]]' = Queue()
+    _queue: List[Union[Link, URLReference]] = []
     _queued_pages: Set[str] = set()
     _done_pages: Set[str] = set()
 
@@ -96,21 +93,41 @@ class BaseChecker:
             if (clean_url in self._done_pages) or (clean_url in self._queued_pages):
                 return
             self._queued_pages.add(clean_url)
-        self._queue.put(task)
+        self._queue.append(task)
 
     def run(self) -> None:
         """Run the checker; keep running tasks until the queue (see
         `enqueue()`) is empty.
 
         """
-        while not self._queue.empty():
-            task = self._queue.get()
-            if isinstance(task, Link):
-                self._check_link(task)
-            elif isinstance(task, URLReference):
-                self._check_page(task)
+        not_before: Dict[str, float] = {}
+        while self._queue:
+            task = self._queue[0]
+            self._queue = self._queue[1:]
+            now = time.time()
+            if not_before.get(task_netloc(task), 0) < now:
+                try:
+                    if isinstance(task, Link):
+                        self._check_link(task)
+                    elif isinstance(task, URLReference):
+                        self._check_page(task)
+                    else:
+                        assert False
+                except RetryAfterException as err:
+                    self.handle_429(err)
+                    not_before[urlparse(err.url).netloc] = time.time() + err.retry_after
+                    self.enqueue(task)
             else:
-                assert False
+                if any(not_before.get(task_netloc(ot), 0) < now for ot in self._queue):
+                    # There's other stuff to do in the mean-time, just queue it again after
+                    # that stuff.
+                    self.enqueue(task)
+                else:
+                    # There's nothing to do but sleep
+                    secs = min(not_before.values()) - now
+                    self.handle_sleep(secs)
+                    time.sleep(secs)
+                    self.enqueue(task)
 
     def _get_resp(self, url: str) -> Union[requests.Response, str]:
         try:
@@ -121,6 +138,8 @@ class BaseChecker:
                     self.handle_page_error(url, reterr)
                 return reterr
             return resp
+        except RetryAfterException as err:
+            raise err
         except Exception as err:
             reterr = f"{err}"
             self.handle_page_error(url, reterr)
@@ -355,9 +374,16 @@ class BaseChecker:
         """
         pass
 
-    def handle_backoff(self, url: str, secs: int) -> None:
-        """handle_backoff is a hook; called whenever we encounter an HTTP 429
+    def handle_429(self, err: RetryAfterException) -> None:
+        """handle_429 is a hook; called whenever we encounter an HTTP 429
         response telling us to backoff for a number of seconds.
+
+        """
+        pass
+
+    def handle_sleep(self, secs: float) -> None:
+        """handle_sleep is a hook; called before sleeping whenever we have nothing else to do but
+        wait {secs} seconds until our 429s have expired.
 
         """
         pass

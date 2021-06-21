@@ -3,7 +3,7 @@ import sys
 from typing import Optional, Protocol, Sequence
 from urllib.parse import urldefrag, urlparse
 
-from blclib import BaseChecker, Link, URLReference
+from blclib import BaseChecker, Link, RetryAfterException, URLReference
 
 
 class GenericChecker(BaseChecker):
@@ -14,7 +14,7 @@ class GenericChecker(BaseChecker):
     stats_errors: int = 0
     stats_links_total: int = 0
     stats_links_bad: int = 0
-    stats_sleep: int = 0
+    stats_sleep: float = 0
 
     def __init__(self, domain: str) -> None:
         self.domain = domain
@@ -44,9 +44,12 @@ class GenericChecker(BaseChecker):
         self.stats_errors += 1
         print(f"error: {url}: {err}")
 
-    def handle_backoff(self, url: str, secs: int) -> None:
+    def handle_429(self, err: RetryAfterException) -> None:
+        print(f"backoff: {err.url}: retrying after {err.retry_after} seconds")
+
+    def handle_sleep(self, secs: float) -> None:
         self.stats_sleep += secs
-        print(f"backoff: {url}: retrying after {secs} seconds")
+        print(f"backoff: sleeping for {secs} seconds")
 
     def is_internal_domain(self, netloc: str) -> bool:
         if netloc == 'telepresence.io':
