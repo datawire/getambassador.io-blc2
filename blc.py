@@ -2,7 +2,7 @@
 import re
 import sys
 from typing import Optional, Sequence
-from urllib.parse import urlparse
+from urllib.parse import urldefrag, urlparse
 
 from blclib import BaseChecker, Link, URLReference
 
@@ -50,7 +50,7 @@ class Checker(BaseChecker):
 
     def handle_request_starting(self, url: str) -> None:
         if not url.startswith('data:'):
-            print(f"GET {url}")
+            print(f"GET {urldefrag(url).url}")
             self.stats_requests += 1
 
     def handle_page_starting(self, url: str) -> None:
