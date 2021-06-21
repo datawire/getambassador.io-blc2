@@ -7,21 +7,6 @@ from urllib.parse import urldefrag, urlparse
 from blclib import BaseChecker, Link, URLReference
 
 
-def is_doc_url(url: URLReference) -> Optional[str]:
-    """Returns the docs version if 'url' is a docs-url, or None if 'url' is not a docs-url."""
-    parsed = urlparse(url.resolved)
-    if parsed.path.startswith('/docs/') or parsed.path == '/docs':
-        parts = parsed.path.split('/', 3)
-        if len(parts) >= 3:
-            return parts[2]
-        return 'latest'
-    return None
-
-
-def urlpath(url: str) -> str:
-    return urlparse(url).path
-
-
 class Checker(BaseChecker):
     domain: str
 
@@ -65,11 +50,9 @@ class Checker(BaseChecker):
         print(f"backoff: {url}: retrying after {secs} seconds")
 
     def is_internal_domain(self, netloc: str) -> bool:
-        if netloc == 'blog.getambassador.io':
-            return False
-        if netloc == 'getambassador.io':
+        if netloc == 'telepresence.io':
             return True
-        if netloc.endswith('.getambassador.io'):
+        if netloc.endswith('.telepresence.io'):
             return True
         if netloc == self.domain:
             return True
@@ -98,6 +81,34 @@ class Checker(BaseChecker):
         if broken:
             self.log_broken(link, broken)
         else:
+            # Check for "ugly" (semantically-broken, but not-technically-broken) links.
+            ref = urlparse(link.linkurl.ref)
+            if (
+                link.html.tagName == 'link' and link.html['rel'] == 'canonical'
+            ):  # canonical links
+                if ref.netloc not in ['www.getambassador.io', 'www.telepresence.io']:
+                    # It is important that the canonical links point at the production
+                    # domain, so that Netlify deploy previews don't devalue the real version.
+                    self.log_ugly(
+                        link=link,
+                        reason='is a canonical but does not point at www.getambassador.io or www.telepresence.io',
+                        suggestion=(
+                            urlparse(link.linkurl.resolved)
+                            ._replace(scheme='https', netloc='www.telepresence.io')
+                            .geturl()
+                        ),
+                    )
+            elif self.is_internal_domain(ref.netloc):  # should-be-internal links
+                # Links within telepresence.io should not mention the scheme or domain
+                # (this way, they work in Netlify previews)
+                self.log_ugly(
+                    link=link,
+                    reason='is an internal link but has a domain',
+                    suggestion=urlparse(link.linkurl.resolved)
+                    ._replace(scheme='', netloc='')
+                    .geturl(),
+                )
+            # Crawl.
             if urlparse(link.linkurl.resolved).netloc == self.domain:
                 # Check the linked page for broken links.
                 self.enqueue(link.linkurl)
