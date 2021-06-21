@@ -75,27 +75,31 @@ class Checker(BaseChecker):
             return True
         return False
 
+    def handle_link(self, link: Link) -> None:
+        hostname = urlparse(link.linkurl.resolved).hostname
+        netloc = urlparse(link.linkurl.resolved).netloc
+        if (
+            hostname
+            and netloc
+            and (
+                hostname.endswith(".default")
+                or netloc == "localhost:8080"
+                or hostname == "verylargejavaservice"
+                or hostname == "web-app.emojivoto"
+            )
+        ):
+            pass  # skip
+        else:
+            # Check if this link is broken.
+            self.enqueue(link)
+
     def handle_link_result(self, link: Link, broken: Optional[str]) -> None:
         self.stats_links_total += 1
         if broken:
-            hostname = urlparse(link.linkurl.resolved).hostname
-            netloc = urlparse(link.linkurl.resolved).netloc
-            if (
-                hostname
-                and netloc
-                and (
-                    hostname.endswith(".default")
-                    or netloc == "localhost:8080"
-                    or hostname == "verylargejavaservice"
-                    or hostname == "web-app.emojivoto"
-                )
-            ):
-                pass  # skip
-            else:
-                self.log_broken(link, broken)
+            self.log_broken(link, broken)
         else:
-            # Crawl.
             if urlparse(link.linkurl.resolved).netloc == self.domain:
+                # Check the linked page for broken links.
                 self.enqueue(link.linkurl)
 
 

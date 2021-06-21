@@ -239,7 +239,9 @@ class BaseChecker:
 
                     for url_str in url_strs:
                         link_url = base_url.parse(url_str)
-                        self.enqueue(Link(linkurl=link_url, pageurl=page_url, html=element))
+                        self.handle_link(
+                            Link(linkurl=link_url, pageurl=page_url, html=element)
+                        )
 
     def _check_page(self, page_url: URLReference) -> None:
         # Handle redirects
@@ -310,6 +312,17 @@ class BaseChecker:
         """
         pass
 
+    def handle_link(self, link: Link) -> None:
+        """handle_link is a hook; called whenever a link is found in a page.
+        Unlike most of the hooks, the default behavior is non-empty;
+        the default behavior os to call Checker.enqueue(link) to queue
+        the link to be checked.  You can override this to filter
+        certain links out.
+
+        """
+
+        self.enqueue(link)
+
     def handle_link_result(self, link: Link, broken: Optional[str]) -> None:
         """handle_link_result is a hook; called for each link found in a page.
 
@@ -346,3 +359,4 @@ class BaseChecker:
         response telling us to backoff for a number of seconds.
 
         """
+        pass
