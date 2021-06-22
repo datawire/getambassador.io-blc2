@@ -329,15 +329,17 @@ class BaseChecker:
         Using a Python-ish pseudo-code notation to express the
         structure and semantics of the 'link' argument:
 
-            class Link(NamedTuple):
-                linkurl: class URLReference(NamedTuple):  # The URL that the link points at
-                    base:     Optional[URLReference]          # Probably the same URL as pageurl below, but possibly different if <base href> (in which case result.linkurl.base.base is the original pageurl)
-                    ref:      str                             # The original form of the URL reference (e.g. 'href') from the page being checked
-                    resolved: str                             # 'ref', but resolved to be an absolute URL; both by combining it with 'base', and by following any redirects
-                pageurl: NamedTuple:                      # The URL of the page that this link was found on
-                    ref:      str                             # The original request URL
-                    resolved: str                             # 'ref', but after following any redirects
-                html:    bs4.element.Tag                  # The HTML tag that contained the link
+          class Link:
+
+            linkurl: class URLReference:        # '.linkurl' is the URL that the link points at.
+              base:     Optional[URLReference]  # '.linkurl.base' is probably the same URL as '.pageurl' below, but possibly different if <base href> is set (in which case '.linkurl.base.base' is the original '.pageurl').
+              ref:      str                     # '.linkurl.ref' is the original form of the URL reference (e.g. the thing in 'href') from the page being checked.
+              resolved: str                     # '.linkurl.resolved' is '.linkurl.ref', but resolved to be an absolute URL; both by combining it with '.linkurl.base', and by following any redirects.
+            pageurl: class URLReference:        # '.pageurl' is the URL of the page that this link was found on.
+              base:     Optional[URLReference]  # '.pageurl.base' is always 'None'.
+              ref:      str                     # '.pageurl.ref' is the original request URL.
+              resolved: str                     # '.pageurl.resolved' is '.pageurl.ref', but after following any redirects.
+            html:    bs4.element.Tag            # '.html' is the HTML tag that contained the link.
 
         The 'broken' argument is a string identifying why the link is
         considered broken, or is None if the link is not broken.
