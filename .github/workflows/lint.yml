@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: make dev_requirements.txt.stamp
-      - run: make mypy
+      - run: make lint
       - run: make format
       - name: "Dirty check"
         run: |

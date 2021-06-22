@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import re
 import sys
-from typing import Optional, Sequence
-from urllib.parse import urldefrag, urlparse
+from typing import Optional
+from urllib.parse import urlparse
 
-from blclib import BaseChecker, Link, URLReference
+from blclib import Link, URLReference
 from generic_blc import GenericChecker, main
 
 
@@ -36,8 +36,6 @@ class AmbassadorChecker(GenericChecker):
         return False
 
     def product_should_skip_link(self, link: Link) -> bool:
-        hostname = urlparse(link.linkurl.resolved).hostname
-        netloc = urlparse(link.linkurl.resolved).netloc
         return (link.linkurl.ref == 'https://blog.getambassador.io/search?q=canary') or (
             link.linkurl.ref == 'https://app.datadoghq.com/apm/traces'
         )

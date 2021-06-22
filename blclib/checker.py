@@ -1,5 +1,4 @@
 import re
-import time
 from http.client import HTTPMessage
 from queue import Queue
 from typing import Container, Dict, List, Mapping, Optional, Set, Text, Tuple, Union
@@ -167,7 +166,7 @@ class BaseChecker:
             if isinstance(soup, str):
                 return f"fragment: {soup}"
             if not (soup.find(id=fragment) or soup.find("a", {"name": fragment})):
-                return f"fragment: no element with that id/name"
+                return f"fragment: no element with that id/name={repr(fragment)}"
 
         return None
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-import re
 import sys
-from typing import Optional, Protocol, Sequence, Type
+from typing import Optional, Protocol, Sequence
 from urllib.parse import urldefrag, urlparse
 
 from blclib import BaseChecker, Link, URLReference
@@ -66,8 +65,6 @@ class GenericChecker(BaseChecker):
         return False
 
     def handle_link(self, link: Link) -> None:
-        hostname = urlparse(link.linkurl.resolved).hostname
-        netloc = urlparse(link.linkurl.resolved).netloc
         if not self.product_should_skip_link(link):
             # Check if this link is broken.
             self.enqueue(link)

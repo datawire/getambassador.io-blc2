@@ -6,7 +6,6 @@ from urllib.parse import unquote_to_bytes
 import requests.models
 from requests.adapters import BaseAdapter, HTTPAdapter
 from requests.exceptions import InvalidURL
-from requests.utils import get_encoding_from_headers
 from urllib3.response import HTTPResponse
 
 

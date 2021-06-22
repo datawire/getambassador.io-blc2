@@ -3,9 +3,10 @@ run: requirements.txt.stamp
 	. ./venv/bin/activate && PYTHONUNBUFFERED=y ./$(PRODUCT)_blc.py '$(TARGET)'
 .PHONY: run
 
-mypy: dev_requirements.txt.stamp
+lint: dev_requirements.txt.stamp
 	. ./venv/bin/activate && MYPYPATH=$(CURDIR)/mypy-stubs mypy --exclude='^venv/.*' .
-.PHONY: mypy
+	. ./venv/bin/activate && flake8 .
+.PHONY: lint
 
 format: dev_requirements.txt.stamp
 	. ./venv/bin/activate && isort $$(git ls-files ':*.py' ':*.pyi')

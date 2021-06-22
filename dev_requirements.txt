@@ -1,4 +1,10 @@
-mypy
+# Formatting
 isort
 black
+
+# Typechecking
+mypy
 types-requests
+
+# Other linting
+flake8

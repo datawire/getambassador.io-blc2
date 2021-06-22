@@ -1,6 +1,6 @@
 from copy import deepcopy
 from time import sleep
-from typing import Callable, Container, Dict, Mapping, Optional, Text, Tuple, Union
+from typing import Container, Dict, Mapping, Optional, Text, Tuple, Union
 from urllib.parse import urldefrag
 
 import requests

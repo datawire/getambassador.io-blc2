@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-import re
 import sys
-from typing import Optional, Sequence
-from urllib.parse import urldefrag, urlparse
+from urllib.parse import urlparse
 
-from blclib import BaseChecker, Link, URLReference
+from blclib import Link
 from generic_blc import GenericChecker, main
 
 
