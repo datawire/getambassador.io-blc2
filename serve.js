@@ -53,7 +53,7 @@ function doRedirect(requestURL, response, redirect) {
 }
 
 server.on('request', async (request, response) => {
-  console.log(request.method, request.url);
+  console.log('srv', request.method, request.url);
   const requestURL = url.parse(url.resolve('/', request.url));
   if (requestURL.protocol || requestURL.slashes || requestURL.host) {
     response.writeHead(400);

@@ -103,7 +103,10 @@ class AmbassadorChecker(GenericChecker):
 
 if __name__ == "__main__":
     try:
-        sys.exit(main(AmbassadorChecker, sys.argv[1:]))
+        if len(sys.argv) != 2:
+            print(f"Usage: {sys.argv[0]} PROJDIR", file=sys.stderr)
+            sys.exit(2)
+        sys.exit(main(AmbassadorChecker, sys.argv[1]))
     except KeyboardInterrupt as err:
         print(err, file=sys.stderr)
         sys.exit(130)

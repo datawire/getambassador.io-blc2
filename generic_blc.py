@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
+import os.path
+import subprocess
 import sys
-from typing import Optional, Protocol, Sequence
+import threading
+from typing import Optional, Protocol
 from urllib.parse import urldefrag, urlparse
 
 from blclib import BaseChecker, Link, RetryAfterException, URLReference
@@ -34,7 +37,7 @@ class GenericChecker(BaseChecker):
 
     def handle_request_starting(self, url: str) -> None:
         if not url.startswith('data:'):
-            print(f"GET {urldefrag(url).url}")
+            print(f"clt GET {urldefrag(url).url}")
             self.stats_requests += 1
 
     def handle_page_starting(self, url: str) -> None:
@@ -106,11 +109,35 @@ class CheckerInterface(Protocol):
         ...
 
 
-def main(checkerCls: CheckerInterface, urls: Sequence[str]) -> int:
+def main(checkerCls: CheckerInterface, projdir: str) -> int:
+    urls = ['http://localhost:9000/']
     checker = checkerCls(domain=urlparse(urls[0]).netloc)
     for url in urls:
         checker.enqueue(URLReference(ref=url))
-    checker.run()
+
+    with subprocess.Popen(
+        [os.path.join(os.path.dirname(__file__), 'serve.js')],
+        cwd=projdir,
+        stdout=subprocess.PIPE,
+    ) as srv:
+        try:
+            # Wait for the server to be ready
+            assert srv.stdout
+            sys.stdout.write(srv.stdout.readline().decode('utf-8'))
+
+            # Pump the servers logs
+            def pump():
+                while line := srv.stdout.readline():
+                    sys.stdout.write(line.decode('utf-8'))
+
+            threading.Thread(target=pump).start()
+
+            # Run the checker
+            checker.run()
+        finally:
+            srv.kill()
+
+    # Print a summary
     print("Summary:")
     print(
         f"  Actions: Sent {checker.stats_requests} HTTP requests and slept for {checker.stats_sleep} seconds in order to check {checker.stats_links_total} links on {checker.stats_pages} pages"
@@ -123,7 +150,10 @@ def main(checkerCls: CheckerInterface, urls: Sequence[str]) -> int:
 
 if __name__ == "__main__":
     try:
-        sys.exit(main(GenericChecker, sys.argv[1:]))
+        if len(sys.argv) != 2:
+            print(f"Usage: {sys.argv[0]} PROJDIR", file=sys.stderr)
+            sys.exit(2)
+        sys.exit(main(GenericChecker, sys.argv[1]))
     except KeyboardInterrupt as err:
         print(err, file=sys.stderr)
         sys.exit(130)
