@@ -8,12 +8,12 @@ const url = require('url');
 const mime = require('mime');
 const redirectParser = require('netlify-redirect-parser');
 
-let host = 'localhost'
+let host = 'localhost';
 let port = 9000;
 let dir = path.resolve('public');
 let cfg = path.resolve('netlify.toml');
 
-const server = http.createServer()
+const server = http.createServer();
 
 async function exists(filepath) {
   try {

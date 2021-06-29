@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "engines": {
+    "npm": "Please use yarn instead of npm",
+    "yarn": "^v1.3.2",
+    "node": ">=15.0.0"
+  },
+  "dependencies": {
+    "mime": "^2.5.2",
+    "netlify-redirect-parser": "^5.1.1"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0"
+  }
+}

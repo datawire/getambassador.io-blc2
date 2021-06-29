@@ -2,6 +2,8 @@ venv/
 .mypy_cache/
 __pycache__/
 
+node_modules/
+
 *.stamp
 
 log*.txt
