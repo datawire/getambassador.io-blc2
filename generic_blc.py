@@ -3,7 +3,7 @@ import os.path
 import subprocess
 import sys
 import threading
-from typing import Optional, Protocol
+from typing import Optional, Protocol, Set
 from urllib.parse import urldefrag, urlparse
 
 from blclib import BaseChecker, Link, RetryAfterException, URLReference
@@ -18,6 +18,8 @@ class GenericChecker(BaseChecker):
     stats_links_total: int = 0
     stats_links_bad: int = 0
     stats_sleep: float = 0
+
+    stats_sitemap: Set[str] = set()
 
     def __init__(self, domain: str) -> None:
         self.domain = domain
@@ -41,6 +43,9 @@ class GenericChecker(BaseChecker):
             self.stats_requests += 1
 
     def handle_page_starting(self, url: str) -> None:
+        urlobj = urlparse(url)
+        if urlobj.netloc == self.domain:
+            self.stats_sitemap.add(urlobj.path)
         self.stats_pages += 1
 
     def handle_page_error(self, url: str, err: str) -> None:
@@ -109,6 +114,21 @@ class CheckerInterface(Protocol):
         ...
 
 
+def crawl_filesystem(pubdir: str) -> Set[str]:
+    pubdir = os.path.normpath(pubdir)
+    ret: Set[str] = set()
+    for root, dirs, files in os.walk(pubdir):
+        for file in files:
+            if not file.endswith('.html'):
+                continue
+            fullpath = os.path.join(root, file)
+            urlpath = fullpath[len(pubdir) :]
+            if urlpath.endswith('/index.html'):
+                urlpath = urlpath[: -len('index.html')]
+            ret.add(urlpath)
+    return ret
+
+
 def main(checkerCls: CheckerInterface, projdir: str) -> int:
     urls = ['http://localhost:9000/']
     checker = checkerCls(domain=urlparse(urls[0]).netloc)
@@ -137,15 +157,23 @@ def main(checkerCls: CheckerInterface, projdir: str) -> int:
         finally:
             srv.kill()
 
+    sitemap = crawl_filesystem(os.path.join(projdir, 'public'))
+    stats_unreachable = len(sitemap - checker.stats_sitemap)
+    for path in sorted(sitemap - checker.stats_sitemap):
+        print(
+            f'Page http://localhost:9000{path} is not reachable from elsewhere on the site'
+        )
+
     # Print a summary
     print("Summary:")
     print(
-        f"  Actions: Sent {checker.stats_requests} HTTP requests and slept for {checker.stats_sleep} seconds in order to check {checker.stats_links_total} links on {checker.stats_pages} pages"
+        f"  Actions: Sent {checker.stats_requests} HTTP requests and slept for {checker.stats_sleep} seconds in order to check {checker.stats_links_total} links on {checker.stats_pages} pages."
     )
     print(
-        f"  Results: Encountered {checker.stats_errors} errors and {checker.stats_links_bad} bad links"
+        f"  Results: Encountered {checker.stats_errors} errors, {checker.stats_links_bad} bad links, and identified {stats_unreachable} unreachable pages."
     )
-    return 1 if (checker.stats_errors + checker.stats_links_bad) > 0 else 0
+    total_problems = checker.stats_errors + checker.stats_links_bad + stats_unreachable
+    return 1 if total_problems > 0 else 0
 
 
 if __name__ == "__main__":
