@@ -318,12 +318,24 @@ class BaseChecker:
             link_url = page_url.parse(link['url'])
             self.handle_link(Link(linkurl=link_url, pageurl=page_url, html=None))
 
+        if sourcemap_url := page_resp.headers.get('sourcemap', ''):
+            link_url = page_url.parse(sourcemap_url)
+            self.handle_link(Link(linkurl=link_url, pageurl=page_url, html=None))
+
         # Inspect the page for bad links #################################################
 
         content_type = get_content_type(page_resp)
         if content_type == 'application/javascript':
+            if m := re.match(
+                r'^/\*! For license information please see (\S+) \*/', page_resp.text
+            ):
+                link_url = page_url.parse(m[1])
+                self.handle_link(Link(linkurl=link_url, pageurl=page_url, html=None))
+            if m := re.match(r'//[#@] sourceMappingURL=(\S+)\n?$', page_resp.text):
+                # sourcemap v3 https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k/edit#
+                link_url = page_url.parse(m[1])
+                self.handle_link(Link(linkurl=link_url, pageurl=page_url, html=None))
             # TODO: check for ES6 imports
-            pass
         elif content_type == 'application/json':
             pass  # nothing to do
         elif content_type == 'application/manifest+json':
