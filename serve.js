@@ -7,6 +7,7 @@ const url = require('url');
 
 const mime = require('mime');
 const redirectParser = require('netlify-redirect-parser');
+const { parseHeadersFile, headersForPath } = require('netlify-cli/src/utils/headers');
 
 let host = 'localhost';
 let port = 9000;
@@ -111,6 +112,14 @@ server.on('request', async (request, response) => {
     }
     return;
   }
+
+  const headersFiles = [path.resolve('_headers'), path.resolve(dir, '_headers')];
+  const headerRules = headersFiles.reduce((headerRules, headersFile) => Object.assign(headerRules, parseHeadersFile(headersFile)), {});
+  const pathHeaderRules = headersForPath(headerRules, requestURL.pathname);
+  Object.entries(pathHeaderRules).forEach(([key, val]) => {
+    response.setHeader(key, val);
+  });
+
   response.writeHead(200, {
     'Content-Type': mime.getType(filepath),
   });

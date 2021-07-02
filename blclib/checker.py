@@ -8,6 +8,7 @@ import bs4.element
 import requests
 import tinycss2
 from bs4 import BeautifulSoup
+from requests.utils import parse_header_links
 
 from .data_uri import DataAdapter
 from .httpcache import HTTPClient as BaseHTTPClient
@@ -310,6 +311,12 @@ class BaseChecker:
 
         # Log that we're starting
         self.handle_page_starting(page_clean_url)
+
+        # Inspect the headers for bad links ##############################################
+
+        for link in parse_header_links(page_resp.headers.get('link', '')):
+            link_url = page_url.parse(link['url'])
+            self.handle_link(Link(linkurl=link_url, pageurl=page_url, html=None))
 
         # Inspect the page for bad links #################################################
 
