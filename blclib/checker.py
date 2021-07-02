@@ -286,6 +286,7 @@ class BaseChecker:
             self._process_css(
                 page_url=page_url, base_url=base_url, css_str=element.string, tag=element
             )
+        self.handle_html_extra(page_url=page_url, page_soup=page_soup)
 
     def _process_css(
         self,
@@ -407,6 +408,14 @@ class BaseChecker:
         HTML page; before we fetch that page (unless it's already
         cached from a previous link check) and before any links on
         that page are handled.
+
+        """
+        pass
+
+    def handle_html_extra(self, page_url: URLReference, page_soup: BeautifulSoup) -> None:
+        """handle_html_extra is a hook; called for each page we process.  This
+        allows an application to do extra validation of the HTML beyond what is
+        built in to blclib.
 
         """
         pass
