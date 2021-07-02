@@ -42,7 +42,7 @@ class AmbassadorChecker(GenericChecker):
 
     def product_should_skip_link_result(self, link: Link, broken: str) -> bool:
         return bool(
-            (re.match('^HTTP_5[0-9]{2}$', broken))
+            (re.search('^HTTP_5[0-9]{2}$', broken))
             or (
                 broken == 'HTTP_204'
                 and (

@@ -86,7 +86,7 @@ class GenericChecker(BaseChecker):
                 )
             elif (
                 url.netloc == 'github.com'
-                and re.match(r'^/[^/]+/[^/]+$', url.path)
+                and re.search(r'^/[^/]+/[^/]+$', url.path)
                 and url.fragment
                 and not url.fragment.startswith('user-content-')
             ):
@@ -99,8 +99,8 @@ class GenericChecker(BaseChecker):
                 )
             elif (
                 url.netloc == 'github.com'
-                and re.match(r'^/[^/]+/[^/]+/blob/', url.path)
-                and re.match(r'^L[0-9]+-L[0-9]+$', url.fragment)
+                and re.search(r'^/[^/]+/[^/]+/blob/', url.path)
+                and re.search(r'^L[0-9]+-L[0-9]+$', url.fragment)
             ):
                 self.enqueue(
                     link._replace(
