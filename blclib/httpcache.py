@@ -1,6 +1,6 @@
 from copy import deepcopy
 from typing import Container, Dict, Mapping, Optional, Text, Tuple, Union
-from urllib.parse import urldefrag
+from urllib.parse import urldefrag, urljoin
 
 import requests
 import requests.adapters
@@ -55,11 +55,18 @@ class HTTPClient(requests.Session):
                         cert=cert,
                         proxies=proxies,
                     )
-                    if resp.status_code == 429:
-                        retry_after = resp.headers.get('retry-after', 'x')
-                        if retry_after.isnumeric():
-                            raise RetryAfterException(str(req.url), int(retry_after))
-                    if cachekey:
+                    if (
+                        resp.status_code == 429
+                        and (retry_after := resp.headers.get('retry-after', 'x')).isnumeric()
+                    ):
+                        raise RetryAfterException(str(req.url), int(retry_after))
+                    elif (
+                        resp.is_redirect
+                        and req.url
+                        and urljoin(req.url, resp.headers['location']) == req.url
+                    ):
+                        raise RetryAfterException(str(req.url), 60)
+                    elif cachekey:
                         client._cache[cachekey] = resp
 
                 return resp
