@@ -143,7 +143,12 @@ class BaseChecker:
 
     def _get_resp(self, url: str) -> Union[requests.Response, str]:
         try:
-            resp: requests.Response = self._client.get(url)
+            resp: requests.Response = self._client.get(
+                url,
+                headers={
+                    'User-Agent': 'github.com/datawire/getambassador.io-blc2',
+                },
+            )
             if resp.status_code != 200:
                 reterr = f"HTTP_{resp.status_code}"
                 if resp.status_code == 429 or int(resp.status_code / 100) == 5:
