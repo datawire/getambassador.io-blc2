@@ -7,6 +7,9 @@ import threading
 from typing import Optional, Protocol, Set
 from urllib.parse import urldefrag, urlparse
 
+import bs4.element
+from bs4 import BeautifulSoup
+
 from blclib import BaseChecker, Link, RetryAfterException, URLReference
 
 
@@ -48,6 +51,15 @@ class GenericChecker(BaseChecker):
 
     def handle_page_starting(self, url: str) -> None:
         self.stats_pages += 1
+
+    def handle_html_extra(self, page_url: URLReference, page_soup: BeautifulSoup) -> None:
+        # It is important that all pages have canonicals so that Netlify previews don't
+        # devalue the real site.
+        def is_canonical(tag: bs4.element.Tag) -> bool:
+            return (tag.name == 'link') and bool(tag['href']) and ('canonical' in tag['rel'])
+
+        if not page_soup.find_all(is_canonical):
+            print(f'Page {urldefrag(page_url.resolved).url} does not have a canonical')
 
     def handle_page_error(self, url: str, err: str) -> None:
         self.stats_errors += 1
