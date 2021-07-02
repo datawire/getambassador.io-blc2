@@ -340,12 +340,12 @@ class BaseChecker:
 
         content_type = get_content_type(page_resp)
         if content_type == 'application/javascript':
-            if m := re.match(
+            if m := re.search(
                 r'^/\*! For license information please see (\S+) \*/', page_resp.text
             ):
                 link_url = page_url.parse(m[1])
                 self.handle_link(Link(linkurl=link_url, pageurl=page_url, html=None))
-            if m := re.match(r'//[#@] sourceMappingURL=(\S+)\n?$', page_resp.text):
+            if m := re.search(r'//[#@] sourceMappingURL=(\S+)\n?$', page_resp.text):
                 # sourcemap v3 https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k/edit#
                 link_url = page_url.parse(m[1])
                 self.handle_link(Link(linkurl=link_url, pageurl=page_url, html=None))
