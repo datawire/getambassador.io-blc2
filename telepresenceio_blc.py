@@ -34,7 +34,7 @@ class TelepresenceChecker(GenericChecker):
         # Check for "ugly" (semantically-broken, but not-technically-broken) links.
         ref = urlparse(link.linkurl.ref)
         if (
-            link.html and link.html.tagName == 'link' and link.html['rel'] == 'canonical'
+            link.html and (link.html.name == 'link') and ('canonical' in link.html['rel'])
         ):  # canonical links
             if ref.netloc not in ['www.getambassador.io', 'www.telepresence.io']:
                 # It is important that the canonical links point at the production

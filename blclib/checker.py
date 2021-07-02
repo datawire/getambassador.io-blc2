@@ -159,7 +159,7 @@ class BaseChecker:
                 soup = resp
             else:
                 content_type = get_content_type(resp)
-                if content_type == 'text/html':
+                if content_type == 'text/html' or content_type == 'image/svg+xml':
                     try:
                         soup = BeautifulSoup(resp.text, 'lxml')
                     except Exception as err:
@@ -355,6 +355,14 @@ class BaseChecker:
             pass  # nothing to do
         elif content_type == 'image/vnd.microsoft.icon':
             pass  # nothing to do
+        elif content_type == 'application/vnd.ms-fontobject':
+            pass  # nothing to do
+        elif content_type == 'font/ttf':
+            pass  # nothing to do
+        elif content_type == 'font/woff':
+            pass  # nothing to do
+        elif content_type == 'font/woff2':
+            pass  # nothing to do
         elif content_type == 'text/css':
             self._process_css(page_url=page_url, base_url=page_url, css_str=page_resp.text)
         elif content_type == 'text/html':
@@ -363,6 +371,8 @@ class BaseChecker:
                 self.handle_page_error(page_clean_url, page_soup)
                 return
             self._process_html(page_url, page_soup)
+        elif content_type == 'text/plain':
+            pass  # nothing to do
         else:
             self.handle_page_error(page_clean_url, f"unknown Content-Type: {content_type}")
 

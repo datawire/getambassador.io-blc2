@@ -46,7 +46,7 @@ class URLReference:
         return URLReference(
             base=(base or self.base),
             ref=(ref or self.ref),
-            resolved=(resolved or self.resolved),
+            resolved=(resolved or self._resolved),
         )
 
     def __repr__(self) -> str:

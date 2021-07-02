@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os.path
+import re
 import subprocess
 import sys
 import threading
@@ -78,6 +79,24 @@ class GenericChecker(BaseChecker):
     def handle_link(self, link: Link) -> None:
         if not self.product_should_skip_link(link):
             # Check if this link is broken.
+            url = urlparse(link.linkurl.resolved)
+            if link.linkurl.ref.endswith(".eot?#iefix"):
+                link = link._replace(
+                    linkurl=link.linkurl._replace(ref=link.linkurl.ref[: -len("?#iefix")])
+                )
+            elif (
+                url.netloc == 'github.com'
+                and re.match(r'^/[^/]+/[^/]+$', url.path)
+                and url.fragment
+                and not url.fragment.startswith('user-content-')
+            ):
+                link = link._replace(
+                    linkurl=link.linkurl._replace(
+                        resolved=url._replace(
+                            fragment='user-content-' + url.fragment
+                        ).geturl()
+                    )
+                )
             self.enqueue(link)
 
     def product_should_skip_link_result(self, link: Link, broken: str) -> bool:
@@ -123,6 +142,8 @@ def crawl_filesystem(pubdir: str) -> Set[str]:
             urlpath = fullpath[len(pubdir) :]
             if urlpath.endswith('/index.html'):
                 urlpath = urlpath[: -len('index.html')]
+            if urlpath == "/_redirects" or urlpath == "/_headers":
+                continue
             ret.add(urlpath)
     return ret
 
