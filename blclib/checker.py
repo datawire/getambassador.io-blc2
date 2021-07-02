@@ -129,13 +129,14 @@ class BaseChecker:
                     not_before[urlparse(err.url).netloc] = time.time() + err.retry_after
                     self.enqueue(task)
             else:
-                if any(not_before.get(task_netloc(ot), 0) < now for ot in self._queue):
+                times = [not_before.get(task_netloc(ot), 0) for ot in self._queue]
+                if any(ts < now for ts in times):
                     # There's other stuff to do in the mean-time, just queue it again after
                     # that stuff.
                     self.enqueue(task)
                 else:
                     # There's nothing to do but sleep
-                    secs = min(not_before.values()) - now
+                    secs = min(times) - now
                     self.handle_sleep(secs)
                     time.sleep(secs)
                     self.enqueue(task)
