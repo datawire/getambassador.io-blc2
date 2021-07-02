@@ -135,6 +135,7 @@ class BaseChecker:
             if resp.status_code != 200:
                 reterr = f"HTTP_{resp.status_code}"
                 if resp.status_code == 429 or int(resp.status_code / 100) == 5:
+                    # Report it as an error (instead of just as a broken link)
                     self.handle_page_error(url, reterr)
                 return reterr
             return resp
@@ -304,6 +305,8 @@ class BaseChecker:
         elif content_type == 'image/jpeg':
             pass  # nothing to do
         elif content_type == 'image/png':
+            pass  # nothing to do
+        elif content_type == 'image/vnd.microsoft.icon':
             pass  # nothing to do
         elif content_type == 'text/html':
             page_soup = self._get_soup(page_clean_url)

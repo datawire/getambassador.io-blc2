@@ -38,14 +38,14 @@ class GenericChecker(BaseChecker):
         print(msg)
 
     def handle_request_starting(self, url: str) -> None:
-        if not url.startswith('data:'):
+        urlobj = urlparse(url)
+        if urlobj.netloc == self.domain:
+            self.stats_sitemap.add(urlobj.path)
+        if urlobj.scheme != 'data':
             print(f"clt GET {urldefrag(url).url}")
             self.stats_requests += 1
 
     def handle_page_starting(self, url: str) -> None:
-        urlobj = urlparse(url)
-        if urlobj.netloc == self.domain:
-            self.stats_sitemap.add(urlobj.path)
         self.stats_pages += 1
 
     def handle_page_error(self, url: str, err: str) -> None:
@@ -119,8 +119,6 @@ def crawl_filesystem(pubdir: str) -> Set[str]:
     ret: Set[str] = set()
     for root, dirs, files in os.walk(pubdir):
         for file in files:
-            if not file.endswith('.html'):
-                continue
             fullpath = os.path.join(root, file)
             urlpath = fullpath[len(pubdir) :]
             if urlpath.endswith('/index.html'):
@@ -130,7 +128,11 @@ def crawl_filesystem(pubdir: str) -> Set[str]:
 
 
 def main(checkerCls: CheckerInterface, projdir: str) -> int:
-    urls = ['http://localhost:9000/']
+    urls = [
+        'http://localhost:9000/',
+        'http://localhost:9000/404.html',
+        'http://localhost:9000/404/',
+    ]
     checker = checkerCls(domain=urlparse(urls[0]).netloc)
     for url in urls:
         checker.enqueue(URLReference(ref=url))
