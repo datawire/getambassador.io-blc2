@@ -73,4 +73,4 @@ class URLReference:
 class Link(NamedTuple):
     linkurl: URLReference
     pageurl: URLReference
-    html: bs4.element.Tag
+    html: Optional[bs4.element.Tag]

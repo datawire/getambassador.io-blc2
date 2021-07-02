@@ -4,8 +4,9 @@ from http.client import HTTPMessage
 from typing import Container, Dict, List, Mapping, Optional, Set, Text, Tuple, Union
 from urllib.parse import urldefrag, urlparse
 
-# import bs4.element
+import bs4.element
 import requests
+import tinycss2
 from bs4 import BeautifulSoup
 
 from .data_uri import DataAdapter
@@ -261,6 +262,33 @@ class BaseChecker:
                         self.handle_link(
                             Link(linkurl=link_url, pageurl=page_url, html=element)
                         )
+        for element in page_soup.select('style'):
+            self._process_css(
+                page_url=page_url, base_url=base_url, css_str=element.string, tag=element
+            )
+
+    def _process_css(
+        self,
+        page_url: URLReference,
+        base_url: URLReference,
+        css_str: str,
+        tag: Optional[bs4.element.Tag] = None,
+    ) -> None:
+        rules = tinycss2.parse_stylesheet(css_str)
+        errors = [rule for rule in rules if isinstance(rule, tinycss2.ast.ParseError)]
+        if errors:
+            self.handle_page_error(page_url.resolved, f"{errors[0]}")
+        for rule in rules:
+            if isinstance(rule, tinycss2.ast.QualifiedRule) or isinstance(
+                rule, tinycss2.ast.AtRule
+            ):
+                if rule.content:
+                    for component in rule.content:
+                        if isinstance(component, tinycss2.ast.URLToken):
+                            link_url = base_url.parse(component.value)
+                            self.handle_link(
+                                Link(linkurl=link_url, pageurl=page_url, html=tag)
+                            )
 
     def _check_page(self, page_url: URLReference) -> None:
         # Handle redirects
@@ -308,6 +336,8 @@ class BaseChecker:
             pass  # nothing to do
         elif content_type == 'image/vnd.microsoft.icon':
             pass  # nothing to do
+        elif content_type == 'text/css':
+            self._process_css(page_url=page_url, base_url=page_url, css_str=page_resp.text)
         elif content_type == 'text/html':
             page_soup = self._get_soup(page_clean_url)
             if isinstance(page_soup, str):
@@ -360,7 +390,7 @@ class BaseChecker:
               base:     Optional[URLReference]  # '.pageurl.base' is always 'None'.
               ref:      str                     # '.pageurl.ref' is the original request URL.
               resolved: str                     # '.pageurl.resolved' is '.pageurl.ref', but after following any redirects.
-            html:    bs4.element.Tag            # '.html' is the HTML tag that contained the link.
+            html:    Optional[bs4.element.Tag]  # '.html' is the HTML tag that contained the link.  May be None if linked to from other resources, like an external stylsheet.
 
         The 'broken' argument is a string identifying why the link is
         considered broken, or is None if the link is not broken.

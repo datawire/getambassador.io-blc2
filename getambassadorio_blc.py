@@ -55,7 +55,8 @@ class AmbassadorChecker(GenericChecker):
                 and link.linkurl.resolved.startswith('https://www.linkedin.com/')
             )
             or (
-                link.html.tagName == 'link'
+                link.html
+                and link.html.tagName == 'link'
                 and link.html.attrName == 'href'
                 and link.html['rel'] == 'canonical'
                 and urlpath(link.linkurl.resolved) == urlpath(link.pageurl.resolved)
@@ -66,7 +67,7 @@ class AmbassadorChecker(GenericChecker):
         # Check for "ugly" (semantically-broken, but not-technically-broken) links.
         ref = urlparse(link.linkurl.ref)
         if (
-            link.html.tagName == 'link' and link.html['rel'] == 'canonical'
+            link.html and link.html.tagName == 'link' and link.html['rel'] == 'canonical'
         ):  # canonical links
             if ref.netloc != 'www.getambassador.io':
                 # It is important that the canonical links point at the production
