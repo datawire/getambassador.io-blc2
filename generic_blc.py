@@ -97,6 +97,30 @@ class GenericChecker(BaseChecker):
                         ).geturl()
                     )
                 )
+            elif (
+                url.netloc == 'github.com'
+                and re.match(r'^/[^/]+/[^/]+/blob/', url.path)
+                and re.match(r'^L[0-9]+-L[0-9]+$', url.fragment)
+            ):
+                self.enqueue(
+                    link._replace(
+                        linkurl=link.linkurl._replace(
+                            resolved=url._replace(
+                                fragment=url.fragment.split('-')[0]
+                            ).geturl()
+                        )
+                    )
+                )
+                self.enqueue(
+                    link._replace(
+                        linkurl=link.linkurl._replace(
+                            resolved=url._replace(
+                                fragment=url.fragment.split('-')[1]
+                            ).geturl()
+                        )
+                    )
+                )
+                return
             self.enqueue(link)
 
     def product_should_skip_link_result(self, link: Link, broken: str) -> bool:
