@@ -27,12 +27,12 @@ class GenericChecker(BaseChecker):
 
     def log_broken(self, link: Link, reason: str) -> None:
         self.stats_links_bad += 1
-        msg = f'Page {link.pageurl.resolved} has a broken link: "{link.linkurl.ref}" ({reason})'
+        msg = f'Page {urldefrag(link.pageurl.resolved).url} has a broken link: "{link.linkurl.ref}" ({reason})'
         print(msg)
 
     def log_ugly(self, link: Link, reason: str, suggestion: Optional[str] = None) -> None:
         self.stats_links_bad += 1
-        msg = f'Page {link.pageurl.resolved} has an ugly link: "{link.linkurl.ref}" {reason}'
+        msg = f'Page {urldefrag(link.pageurl.resolved).url} has an ugly link: "{link.linkurl.ref}" {reason}'
         if suggestion:
             msg += f' (did you mean "{suggestion}"?)'
         print(msg)
