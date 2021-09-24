@@ -18,7 +18,7 @@ class HTTPClient(requests.Session):
 
     _cache: Dict[str, requests.Response] = dict()
 
-    def get_adapter(self, url: Union[Text, bytes]) -> requests.adapters.BaseAdapter:
+    def get_adapter(self, url: str) -> requests.adapters.BaseAdapter:
         client = self
         inner = super().get_adapter(url)
 

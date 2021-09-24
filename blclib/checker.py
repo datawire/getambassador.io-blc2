@@ -67,6 +67,15 @@ def task_netloc(task: Union[Link, URLReference]) -> str:
         assert False
 
 
+# types-beautifulsoup4 4.10 says that bs4.element.Tag.get returns `str | list[str] | None`,
+# which I'm pretty sure is wrong, I don't think it's actually possible for it to return a
+# list[str].  So, uh, have this little assertion validate that belief.
+def get_tag_attr(tag: bs4.element.Tag, attrname: str) -> Optional[str]:
+    ret = tag.get(attrname)
+    assert (ret is None) or isinstance(ret, str)
+    return ret
+
+
 class BaseChecker:
 
     _client: HTTPClient
@@ -235,23 +244,26 @@ class BaseChecker:
         base_url = page_url
         base_tags = page_soup.select('base[href]')
         if base_tags:
-            base_url = base_url.parse(base_tags[0]['href'])
+            href = get_tag_attr(base_tags[0], 'href')
+            assert href
+            base_url = base_url.parse(href)
 
         for tagname, attrs in selectors.items():
             for attrname in attrs:
                 for element in page_soup.select(f"{tagname}[{attrname}]"):
-                    attrvalue = element[attrname]
+                    attrvalue = get_tag_attr(element, attrname)
+                    assert attrvalue
                     url_strs: List[str] = []
 
                     if attrname == 'content':
-                        if element.get('http-equiv', '').lower() == 'refresh':
+                        if (get_tag_attr(element, 'http-equiv') or '').lower() == 'refresh':
                             # https://html.spec.whatwg.org/multipage/semantics.html#attr-meta-http-equiv-refresh
                             url = url_from_meta_http_equiv_refresh(attrvalue)
                             if url:
                                 url_strs = [url]
                     elif attrname == 'ping':
                         # https://html.spec.whatwg.org/multipage/links.html#ping
-                        url_strs = [attrvalue.split()]
+                        url_strs = [x for x in attrvalue.split()]
                     elif attrname == 'srcset':
                         # https://html.spec.whatwg.org/multipage/images.html#srcset-attributes
                         url_strs = [desc.split()[0] for desc in attrvalue.split(',')]
@@ -264,6 +276,7 @@ class BaseChecker:
                             Link(linkurl=link_url, pageurl=page_url, html=element)
                         )
         for element in page_soup.select('style'):
+            assert element.string
             self._process_css(
                 page_url=page_url, base_url=base_url, css_str=element.string, tag=element
             )

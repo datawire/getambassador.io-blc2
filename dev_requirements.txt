@@ -4,6 +4,8 @@ black
 
 # Typechecking
 mypy
+lxml-stubs
+types-beautifulsoup4
 types-requests
 
 # Other linting
