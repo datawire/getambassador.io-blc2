@@ -20,7 +20,7 @@ format: dev_requirements.txt.stamp package.json.dev.stamp
 # pip
 
 venv/bin/pip:
-	python -m venv venv
+	python3 -m venv venv
 %.txt.stamp: %.txt venv/bin/pip
 	./venv/bin/pip install -r $<
 	date > $@
