@@ -28,3 +28,11 @@ of pages with broken links.
  - `PRODUCT` (default=`generic`):
    + Specific per-product link checks settings are defined in
      `${PRODUCT}_blc.py` files.
+
+# Dependencies
+
+- GNU Make
+- `date`
+- `python3`
+- `node` `>=15.0.0`
+- `yarn` `^v1.3.2`
