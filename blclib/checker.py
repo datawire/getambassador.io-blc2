@@ -251,14 +251,14 @@ class BaseChecker:
         base_tags = page_soup.select('base[href]')
         if base_tags:
             href = get_tag_attr(base_tags[0], 'href')
-            assert href
+            assert isinstance(href, str)
             base_url = base_url.parse(href)
 
         for tagname, attrs in selectors.items():
             for attrname in attrs:
                 for element in page_soup.select(f"{tagname}[{attrname}]"):
                     attrvalue = get_tag_attr(element, attrname)
-                    assert attrvalue
+                    assert isinstance(attrvalue, str)
                     url_strs: List[str] = []
 
                     if attrname == 'content':
