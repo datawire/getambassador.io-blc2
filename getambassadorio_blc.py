@@ -23,9 +23,22 @@ def urlpath(url: str) -> str:
     return urlparse(url).path
 
 
+links_to_skip = [
+    'https://blog.getambassador.io/search?q=canary',
+    'https://app.datadoghq.com/apm/traces',
+    'http://web-app.emojivoto',
+    'http://localhost:8080',
+    'http://localhost:8083',
+    'http://verylargejavaservice.default:8080',
+    'http://verylargejavaservice:8080'
+]
+
+
 class AmbassadorChecker(GenericChecker):
     def is_internal_domain(self, netloc: str) -> bool:
         if netloc == 'blog.getambassador.io':
+            return False
+        if netloc == 'app.getambassador.io':
             return False
         if netloc == 'getambassador.io':
             return True
@@ -36,9 +49,7 @@ class AmbassadorChecker(GenericChecker):
         return False
 
     def product_should_skip_link(self, link: Link) -> bool:
-        return (link.linkurl.ref == 'https://blog.getambassador.io/search?q=canary') or (
-            link.linkurl.ref == 'https://app.datadoghq.com/apm/traces'
-        )
+        return link.linkurl.ref in links_to_skip
 
     def product_should_skip_link_result(self, link: Link, broken: str) -> bool:
         return bool(
@@ -75,9 +86,9 @@ class AmbassadorChecker(GenericChecker):
                 self.log_ugly(
                     link=link,
                     reason='is a canonical but does not point at www.getambassador.io',
-                    suggestion=urlparse(link.linkurl.resolved)
-                    ._replace(scheme='https', netloc='www.getambassador.io')
-                    .geturl(),
+                    suggestion=urlparse(link.linkurl.resolved)._replace(
+                        scheme='https',
+                        netloc='www.getambassador.io').geturl(),
                 )
             # Other than that, the canonicals don't need to be inspected more, because they're
             # allowed (expected!) to be cross-version.

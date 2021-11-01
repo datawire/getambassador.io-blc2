@@ -4,6 +4,7 @@ import re
 import subprocess
 import sys
 import threading
+import time
 from typing import Optional, Protocol, Set
 from urllib.parse import urldefrag, urlparse
 
@@ -200,17 +201,24 @@ def main(checkerCls: CheckerInterface, projdir: str) -> int:
         stdout=subprocess.PIPE,
     ) as srv:
         try:
+            server_ready = [False]
             # Wait for the server to be ready
             assert srv.stdout
             sys.stdout.write(srv.stdout.readline().decode('utf-8'))
 
             # Pump the servers logs
-            def pump():
+            def pump(flag):
                 while line := srv.stdout.readline():
-                    sys.stdout.write(line.decode('utf-8'))
+                    line = line.decode('utf-8')
+                    if "Serving" in line:
+                        flag[0] = True
+                    sys.stdout.write(line)
 
-            threading.Thread(target=pump).start()
+            threading.Thread(target=pump, args=[server_ready]).start()
 
+            # wait until the server is ready
+            while not server_ready[0]:
+                time.sleep(3)
             # Run the checker
             checker.run()
         finally:
