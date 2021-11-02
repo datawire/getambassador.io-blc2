@@ -39,13 +39,13 @@ class AmbassadorChecker(GenericChecker):
 
     def product_should_skip_link(self, link: Link) -> bool:
         return link.linkurl.ref in [
+            'http://verylargejavaservice:8080',
             'https://blog.getambassador.io/search?q=canary',
             'https://app.datadoghq.com/apm/traces',
             'http://web-app.emojivoto',
             'http://localhost:8080',
             'http://localhost:8083',
             'http://verylargejavaservice.default:8080',
-            'http://verylargejavaservice:8080',
         ]
 
     def product_should_skip_link_result(self, link: Link, broken: str) -> bool:
