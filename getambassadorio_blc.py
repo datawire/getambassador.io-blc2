@@ -27,6 +27,8 @@ class AmbassadorChecker(GenericChecker):
     def is_internal_domain(self, netloc: str) -> bool:
         if netloc == 'blog.getambassador.io':
             return False
+        if netloc == 'app.getambassador.io':
+            return False
         if netloc == 'getambassador.io':
             return True
         if netloc.endswith('.getambassador.io'):
@@ -36,9 +38,18 @@ class AmbassadorChecker(GenericChecker):
         return False
 
     def product_should_skip_link(self, link: Link) -> bool:
-        return (link.linkurl.ref == 'https://blog.getambassador.io/search?q=canary') or (
-            link.linkurl.ref == 'https://app.datadoghq.com/apm/traces'
-        )
+        links_to_skip = [
+            'http://verylargejavaservice:8080',
+            'https://blog.getambassador.io/search?q=canary',
+            'https://app.datadoghq.com/apm/traces',
+            'http://web-app.emojivoto/',
+            'http://web-app.emojivoto/leaderboard',
+            'http://verylargejavaservice.default:8080/color',
+            'http://localhost:8080/',
+            'http://localhost:8083/',
+            'http://verylargejavaservice.default:8080/',
+        ]
+        return link.linkurl.ref in links_to_skip or 'mailto' in link.linkurl.ref
 
     def product_should_skip_link_result(self, link: Link, broken: str) -> bool:
         return bool(

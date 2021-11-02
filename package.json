@@ -6,6 +6,7 @@
     "node": ">=15.0.0"
   },
   "dependencies": {
+    "fdir": "^5.1.0",
     "mime": "^2.5.2",
     "netlify-cli": "^4.0.5",
     "netlify-redirect-parser": "^5.1.1"

@@ -7,12 +7,26 @@ const url = require('url');
 
 const mime = require('mime');
 const redirectParser = require('netlify-redirect-parser');
-const { parseHeadersFile, headersForPath } = require('netlify-cli/src/utils/headers');
+const {
+  parseHeadersFile,
+  headersForPath
+} = require('netlify-cli/src/utils/headers');
+const {fdir} = require('fdir');
 
 let host = 'localhost';
 let port = 9000;
 let dir = path.resolve('public');
 let cfg = path.resolve('netlify.toml');
+
+// getambassador.io migration sources
+const datawireDomains = {
+  'http://www.datawire.io/': true,
+  'https://www.datawire.io/': true,
+  'http://datawire.io/': true,
+  'https://datawire.io/': true
+};
+// getambassador.io migration link
+const migrationRedirect = 'https://www.getambassador.io/?utm_source=https://www.datawire.io/';
 
 const server = http.createServer();
 
@@ -27,6 +41,11 @@ async function exists(filepath) {
 
 function matchesRedirect(forcefulOnly, requestURL, redirect) {
   if (forcefulOnly && !redirect.force) {
+    return false;
+  }
+  // keep getambassador.io on localhost, due to migrations from datawire.io to getambassador.io
+  if (requestURL.pathname === '/' && requestURL.path === '/' && requestURL.href === '/' &&
+    datawireDomains[redirect.origin] && migrationRedirect === redirect.to) {
     return false;
   }
   if (redirect.path !== requestURL.pathname && redirect.path !== requestURL.pathname+'/') {
@@ -44,13 +63,42 @@ function matchesRedirect(forcefulOnly, requestURL, redirect) {
 function doRedirect(requestURL, response, redirect) {
   let location = redirect.to;
   if (!url.parse(location).search) {
-    location += (requestURL.search||'');
+    location += (requestURL.search || '');
   }
   response.writeHead(redirect.status, {
     'Location': location,
     'Content-Type': 'text/plain',
   });
   response.end(`Redirecting to ${location}`);
+}
+
+const filesOnMemory = {};
+const errorLoadingFile = 'There was an error reading the file';
+
+function loadSiteOnMemory(dir) {
+  const api = new fdir().withFullPaths().crawl(dir);
+  const files = api.sync();
+  for (const file of files) {
+    fs.readFile(file).then(content => {
+      filesOnMemory[file] = content;
+    }).catch(() => filesOnMemory[file] = errorLoadingFile);
+  }
+}
+
+loadSiteOnMemory(dir);
+
+const headersFiles = [path.resolve('_headers'), path.resolve(dir, '_headers')];
+const headerRules = headersFiles.reduce((headerRules, headersFile) => Object.assign(headerRules, parseHeadersFile(headersFile)), {});
+
+let redirects;
+
+try {
+  redirects = redirectParser.parseAllRedirects({
+    redirectsFiles: [path.resolve(dir, '_redirects')],
+    netlifyConfigPath: cfg,
+  });
+} catch (err) {
+  process.abort();
 }
 
 server.on('request', async (request, response) => {
@@ -61,20 +109,7 @@ server.on('request', async (request, response) => {
     response.end('Bad request URL');
   }
 
-  let redirects;
-  try {
-    redirects = await redirectParser.parseAllRedirects({
-      redirectsFiles: [path.resolve(dir, '_redirects')],
-      netlifyConfigPath: cfg,
-    });
-  } catch (err) {
-    response.writeHead(500, {
-      'Content-Type': 'application/json',
-    });
-    response.end(JSON.stringify(err));
-    return;
-  }
-  let redirect = redirects.find((redirect)=>(matchesRedirect(true, requestURL, redirect)));
+  let redirect = (await redirects).find((redirect) => (matchesRedirect(true, requestURL, redirect)));
   if (redirect) {
     doRedirect(requestURL, response, redirect);
     return;
@@ -83,11 +118,15 @@ server.on('request', async (request, response) => {
   const filepath = path.join(dir, requestURL.pathname).replace(/\/$/, '/index.html');
   let content;
   try {
-    content = await fs.readFile(filepath);
+    if (filesOnMemory[filepath] && filesOnMemory[filepath] !== errorLoadingFile) {
+      content = filesOnMemory[filepath];
+    } else {
+      content = await fs.readFile(filepath);
+    }
   } catch (err) {
     if (err.code === 'EISDIR' && !requestURL.pathname.endsWith('/')) {
       // All sane webservers should do this.  `netlify dev` doesn't.
-      const location = requestURL.pathname + '/' + (requestURL.search||'');
+      const location = requestURL.pathname + '/' + (requestURL.search || '');
       response.writeHead(302, {
         'Location': location,
         'Content-Type': 'text/plain',
@@ -96,13 +135,13 @@ server.on('request', async (request, response) => {
     } else if (requestURL.pathname.endsWith('.html') && await exists(filepath.replace(/\.html$/, ''))) {
       // This is a weird thing that Netlify does (even if you
       // turn off pretty URLs).
-      const location = requestURL.pathname.replace(/\.html$/, '') + (requestURL.search||'');
+      const location = requestURL.pathname.replace(/\.html$/, '') + (requestURL.search || '');
       response.writeHead(302, {
         'Location': location,
         'Content-Type': 'text/plain',
       });
       response.end(`Redirecting to ${location}`);
-    } else if ((redirect = redirects.find((redirect)=>(matchesRedirect(false, requestURL, redirect))))) {
+    } else if ((redirect = (await redirects).find((redirect) => (matchesRedirect(false, requestURL, redirect))))) {
       doRedirect(requestURL, response, redirect);
     } else {
       response.writeHead(404, {
@@ -113,8 +152,6 @@ server.on('request', async (request, response) => {
     return;
   }
 
-  const headersFiles = [path.resolve('_headers'), path.resolve(dir, '_headers')];
-  const headerRules = headersFiles.reduce((headerRules, headersFile) => Object.assign(headerRules, parseHeadersFile(headersFile)), {});
   const pathHeaderRules = headersForPath(headerRules, requestURL.pathname);
   Object.entries(pathHeaderRules).forEach(([key, val]) => {
     response.setHeader(key, val);
