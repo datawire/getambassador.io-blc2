@@ -73,7 +73,7 @@ function doRedirect(requestURL, response, redirect) {
 }
 
 const filesOnMemory = {};
-const errorLoadingFile = 'There was reading the file';
+const errorLoadingFile = 'There was an error reading the file';
 
 function loadSiteOnMemory(dir) {
   const api = new fdir().withFullPaths().crawl(dir);
