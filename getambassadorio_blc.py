@@ -86,9 +86,9 @@ class AmbassadorChecker(GenericChecker):
                 self.log_ugly(
                     link=link,
                     reason='is a canonical but does not point at www.getambassador.io',
-                    suggestion=urlparse(link.linkurl.resolved)._replace(
-                        scheme='https',
-                        netloc='www.getambassador.io').geturl(),
+                    suggestion=urlparse(link.linkurl.resolved)
+                    ._replace(scheme='https', netloc='www.getambassador.io')
+                    .geturl(),
                 )
             # Other than that, the canonicals don't need to be inspected more, because they're
             # allowed (expected!) to be cross-version.
