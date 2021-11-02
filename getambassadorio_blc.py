@@ -45,7 +45,7 @@ class AmbassadorChecker(GenericChecker):
             'http://localhost:8080',
             'http://localhost:8083',
             'http://verylargejavaservice.default:8080',
-            'http://verylargejavaservice:8080'
+            'http://verylargejavaservice:8080',
         ]
 
     def product_should_skip_link_result(self, link: Link, broken: str) -> bool:
