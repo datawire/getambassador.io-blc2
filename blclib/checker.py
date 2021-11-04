@@ -207,6 +207,10 @@ class BaseChecker:
 
         return None
 
+    @staticmethod
+    def _parse_srcset_value(attrvalue: str) -> List:
+        return [desc.split()[0] for desc in attrvalue.split(',')]
+
     def _process_html(self, page_url: URLReference, page_soup: BeautifulSoup) -> None:
         # This list of selectors is the union of all lists in
         # https://github.com/stevenvachon/broken-link-checker/blob/master/lib/internal/tags.js
@@ -272,7 +276,7 @@ class BaseChecker:
                         url_strs = [x for x in attrvalue.split()]
                     elif attrname == 'srcset':
                         # https://html.spec.whatwg.org/multipage/images.html#srcset-attributes
-                        url_strs = [desc.split()[0] for desc in attrvalue.split(',')]
+                        url_strs = self._parse_srcset_value(attrvalue)
                     else:
                         url_strs = [attrvalue]
 
