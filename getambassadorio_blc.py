@@ -151,14 +151,16 @@ class AmbassadorChecker(GenericChecker):
 
 def main(checkerCls: CheckerInterface, projdir: str) -> int:
     urls = [
-        'http://localhost:9000/summer-of-k8s/code/',
+        'http://localhost:9000/',
+        'http://localhost:9000/404.html',
+        'http://localhost:9000/404/',
     ]
     checker = checkerCls(domain=urlparse(urls[0]).netloc)
     for url in urls:
         checker.enqueue(URLReference(ref=url))
 
     with subprocess.Popen(
-        [os.path.join(os.path.dirname(__file__), 'serve.js')],
+        [os.path.join(os.path.abspath(os.path.dirname(__file__)), 'serve.js')],
         cwd=projdir,
         stdout=subprocess.PIPE,
     ) as srv:
