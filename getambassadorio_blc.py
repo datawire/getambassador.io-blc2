@@ -4,11 +4,11 @@ import re
 import subprocess
 import sys
 import threading
-from typing import Optional, List
-from urllib.parse import urlparse, urldefrag
+from typing import List, Optional
+from urllib.parse import urldefrag, urlparse
 
 from blclib import Link, URLReference
-from generic_blc import GenericChecker, CheckerInterface
+from generic_blc import CheckerInterface, GenericChecker
 
 
 def is_doc_url(url: URLReference) -> Optional[str]:
@@ -65,9 +65,11 @@ class AmbassadorChecker(GenericChecker):
             'http://localhost:8083/leaderboard/',
             'http://verylargejavaservice.default:8080/',
         ]
-        return len(
-            [True for link_to_skip in links_to_skip if link.linkurl.ref in link_to_skip]
-        ) > 0 or 'mailto' in link.linkurl.ref
+        return (
+            len([True for link_to_skip in links_to_skip if link.linkurl.ref in link_to_skip])
+            > 0
+            or 'mailto' in link.linkurl.ref
+        )
 
     def product_should_skip_link_result(self, link: Link, broken: str) -> bool:
         return bool(
@@ -138,7 +140,9 @@ class AmbassadorChecker(GenericChecker):
             tokens = attrvalue.split(',', 4)
             while len(tokens) >= 4:
                 links.append(delimiter.join(tokens[0:4]).split(' ')[0])
-                attrvalue = attrvalue[attrvalue.find('h', len(delimiter.join(tokens[0:4]))):]
+                attrvalue = attrvalue[
+                    attrvalue.find('h', len(delimiter.join(tokens[0:4]))):
+                ]
                 tokens = attrvalue.split(delimiter, 5)
             return links
         else:
