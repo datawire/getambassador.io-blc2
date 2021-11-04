@@ -141,7 +141,7 @@ class AmbassadorChecker(GenericChecker):
             while len(tokens) >= 4:
                 links.append(delimiter.join(tokens[0:4]).split(' ')[0])
                 attrvalue = attrvalue[
-                    attrvalue.find('h', len(delimiter.join(tokens[0:4]))):
+                    attrvalue.find('h', len(delimiter.join(tokens[0:4]))) :
                 ]
                 tokens = attrvalue.split(delimiter, 5)
             return links
