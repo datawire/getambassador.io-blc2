@@ -27,9 +27,6 @@ def urlpath(url: str) -> str:
 
 
 class AmbassadorChecker(GenericChecker):
-    stats_broken_links: int = 0
-    stats_ugly_links: int = 0
-
     def log_broken(self, link: Link, reason: str) -> None:
         self.stats_broken_links += 1
         msg = f'Page {urldefrag(link.pageurl.resolved).url} has a broken link: "{link.linkurl.ref}" ({reason})'
@@ -108,8 +105,8 @@ class AmbassadorChecker(GenericChecker):
                     link=link,
                     reason='is a canonical but does not point at www.getambassador.io',
                     suggestion=urlparse(link.linkurl.resolved)
-                        ._replace(scheme='https', netloc='www.getambassador.io')
-                        .geturl(),
+                    ._replace(scheme='https', netloc='www.getambassador.io')
+                    .geturl(),
                 )
             # Other than that, the canonicals don't need to be inspected more, because they're
             # allowed (expected!) to be cross-version.

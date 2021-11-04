@@ -23,6 +23,8 @@ class GenericChecker(BaseChecker):
     stats_links_total: int = 0
     stats_links_bad: int = 0
     stats_sleep: float = 0
+    stats_broken_links: int = 0
+    stats_ugly_links: int = 0
 
     stats_sitemap: Set[str] = set()
 
