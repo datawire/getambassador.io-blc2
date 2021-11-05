@@ -64,6 +64,7 @@ class AmbassadorChecker(GenericChecker):
             'http://localhost:8083/',
             'http://localhost:8083/leaderboard/',
             'http://verylargejavaservice.default:8080/',
+            'https://www.getambassador.io/*/',
         ]
         return (
             len([True for link_to_skip in links_to_skip if link.linkurl.ref in link_to_skip])
