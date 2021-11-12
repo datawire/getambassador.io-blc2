@@ -54,17 +54,23 @@ class AmbassadorChecker(GenericChecker):
 
     def product_should_skip_link(self, link: Link) -> bool:
         links_to_skip = [
-            'http://verylargejavaservice:8080/',
-            'https://blog.getambassador.io/search?q=canary',
-            'https://app.datadoghq.com/apm/traces/',
-            'http://web-app.emojivoto/',
-            'http://web-app.emojivoto/leaderboard/',
-            'http://verylargejavaservice.default:8080/color',
+            'http://localhost:3000/',
+            'http://localhost:3000/color',
             'http://localhost:8080/',
             'http://localhost:8083/',
             'http://localhost:8083/leaderboard/',
             'http://verylargejavaservice.default:8080/',
+            'http://verylargejavaservice.default:8080/color',
+            'http://verylargejavaservice:8080/',
+            'http://web-app.emojivoto/',
+            'http://web-app.emojivoto/leaderboard/',
+            'https://app.datadoghq.com/apm/traces/',
+            'https://blog.getambassador.io/search?q=canary',
+            'https://kubernetes.default',
+            'https://martinfowler.com/articles/microservice-testing/#testing-progress-1',
+            'https://tanzu.vmware.com/kubernetes-grid',
             'https://www.getambassador.io/*/',
+            'https://www.ticketmaster.com/',
         ]
         return (
             len([True for link_to_skip in links_to_skip if link.linkurl.ref in link_to_skip])
