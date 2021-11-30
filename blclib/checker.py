@@ -1,3 +1,4 @@
+import os
 import re
 import time
 from http.client import HTTPMessage
@@ -14,6 +15,8 @@ from .data_uri import DataAdapter
 from .httpcache import HTTPClient as BaseHTTPClient
 from .httpcache import RetryAfterException
 from .models import Link, URLReference
+
+USER_AGENT = os.getenv('USER_AGENT', 'github.com/datawire/getambassador.io-blc2')
 
 
 def get_content_type(resp: requests.Response) -> str:
@@ -146,7 +149,7 @@ class BaseChecker:
             resp: requests.Response = self._client.get(
                 url,
                 headers={
-                    'User-Agent': 'github.com/datawire/getambassador.io-blc2',
+                    'User-Agent': USER_AGENT,
                 },
             )
             if resp.status_code != 200:
