@@ -16,6 +16,12 @@ or
 TARGET=~/src/other-thing.tld make -C ~/src/blc2 > blc.log
 ```
 
+or
+
+```shell
+TARGET=~/src/getambassador.io PRODUCT=getambassadorio USER_AGENT=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36 make -C ~/src/blc2 > blc.log
+```
+
 Then `tail blc.log` for a summary, or `grep ^Page blc.log` for a list
 of pages with broken links.
 
@@ -28,6 +34,8 @@ of pages with broken links.
  - `PRODUCT` (default=`generic`):
    + Specific per-product link checks settings are defined in
      `${PRODUCT}_blc.py` files.
+ - `USER_AGENT` (default: `github.com/datawire/getambassador.io-blc2`; not required to be set):
+    + Specifies the `User_Agent` header value for each request. It avoids security blocks from external sites
 
 # Why
 
