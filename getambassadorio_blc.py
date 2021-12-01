@@ -190,7 +190,7 @@ def main(checkerCls: CheckerInterface, projdir: str) -> int:
     print(
         f"  Results: Encountered {checker.stats_ugly_links + checker.stats_broken_links} errors, {checker.stats_links_bad} bad links."
     )
-    return 1 if checker.stats_broken_links > 0 else 0
+    return 0
 
 
 if __name__ == "__main__":
