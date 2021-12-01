@@ -151,6 +151,7 @@ class BaseChecker:
                 headers={
                     'User-Agent': USER_AGENT,
                 },
+                timeout=10,
             )
             if resp.status_code != 200:
                 reterr = f"HTTP_{resp.status_code}"
