@@ -74,6 +74,7 @@ class AmbassadorChecker(GenericChecker):
             'https://support.datawire.io',
             'http://localhost:3000/',
             'http://localhost:3000/color',
+            'https://github.com/datawire/project-template/generate',
         ]
         return (
             len([True for link_to_skip in links_to_skip if link.linkurl.ref in link_to_skip])
