@@ -117,9 +117,8 @@ class AmbassadorChecker(GenericChecker):
                 self.log_ugly(
                     link=link,
                     reason='is a canonical but does not point at www.getambassador.io',
-                    suggestion=urlparse(link.linkurl.resolved)
-                        ._replace(scheme='https', netloc='www.getambassador.io')
-                        .geturl(),
+                    suggestion=urlparse(link.linkurl.resolved)._replace(
+                        scheme='https', netloc='www.getambassador.io').geturl(),
                 )
             # Other than that, the canonicals don't need to be inspected more, because they're
             # allowed (expected!) to be cross-version.
@@ -151,9 +150,7 @@ class AmbassadorChecker(GenericChecker):
             tokens = attrvalue.split(',', 4)
             while len(tokens) >= 4:
                 links.append(delimiter.join(tokens[0:4]).split(' ')[0])
-                attrvalue = attrvalue[
-                            attrvalue.find('h', len(delimiter.join(tokens[0:4]))):
-                            ]
+                attrvalue = attrvalue[attrvalue.find('h', len(delimiter.join(tokens[0:4]))):]
                 tokens = attrvalue.split(delimiter, 5)
             return links
         else:
