@@ -4,7 +4,7 @@ import re
 import subprocess
 import sys
 import threading
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 from urllib.parse import urldefrag, urlparse
 
 from blclib import Link, URLReference
@@ -28,10 +28,9 @@ def urlpath(url: str) -> str:
 
 class AmbassadorChecker(GenericChecker):
     _user_agent_for_link: Dict[str, str] = {
-        "https://www.ticketmaster.com/":
-            "Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0",
+        "https://www.ticketmaster.com/": "Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0",
         "https://java.com/en/download/help/download_options.html": "PostmanRuntime/7.28.4",
-        "https://java.com/en/download/": "PostmanRuntime/7.28.4"
+        "https://java.com/en/download/": "PostmanRuntime/7.28.4",
     }
 
     def log_broken(self, link: Link, reason: str) -> None:
