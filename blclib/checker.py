@@ -86,6 +86,7 @@ class BaseChecker:
     _queue: List[Union[Link, URLReference]] = []
     _queued_pages: Set[str] = set()
     _done_pages: Set[str] = set()
+    _user_agent_for_link: Dict[str, str] = dict()
 
     def __init__(self) -> None:
         self._client = HTTPClient(self)
@@ -144,12 +145,15 @@ class BaseChecker:
                     time.sleep(secs)
                     self.enqueue(task)
 
+    def _get_user_agent(self, url: str) -> str:
+        return self._user_agent_for_link.get(url, USER_AGENT)
+
     def _get_resp(self, url: str) -> Union[requests.Response, str]:
         try:
             resp: requests.Response = self._client.get(
                 url,
                 headers={
-                    'User-Agent': USER_AGENT,
+                    'User-Agent': self._get_user_agent(url),
                 },
                 timeout=10,
             )
