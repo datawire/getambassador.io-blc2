@@ -167,7 +167,7 @@ class BaseChecker:
         except RetryAfterException as err:
             raise err
         except requests.exceptions.Timeout:
-            reterr = f"HTTP_TIMEOUT"
+            reterr = "HTTP_TIMEOUT"
             self.handle_page_error(url, reterr)
             return reterr
         except Exception as err:
