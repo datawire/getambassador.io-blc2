@@ -166,6 +166,10 @@ class BaseChecker:
             return resp
         except RetryAfterException as err:
             raise err
+        except requests.exceptions.Timeout:
+            reterr = "HTTP_TIMEOUT"
+            self.handle_page_error(url, reterr)
+            return reterr
         except Exception as err:
             reterr = f"{err}"
             self.handle_page_error(url, reterr)
@@ -330,7 +334,10 @@ class BaseChecker:
             page_clean_url = urldefrag(page_url.resolved).url
             self._done_pages.add(page_clean_url)
             self.handle_page_starting(page_clean_url)
-            self.handle_page_error(page_clean_url, page_resp)
+            if page_resp == "HTTP_TIMEOUT":
+                self.handle_timeout(page_clean_url, page_resp)
+            else:
+                self.handle_page_error(page_clean_url, page_resp)
             return
         page_urls = set(urldefrag(r.url).url for r in ([page_resp] + page_resp.history))
         page_url = page_url._replace(resolved=page_resp.url)
@@ -473,6 +480,13 @@ class BaseChecker:
         links on.  This could be because we failed to fetch the page,
         or it could be because of an HTML-parsing error.
 
+        """
+        pass
+
+    def handle_timeout(self, url: str, err: str) -> None:
+        """handle_timeout is a hook; called whenever we encounter an http timeout error.
+        This could be because the user agent or the ip address is not allowed
+        by the remote site
         """
         pass
 
