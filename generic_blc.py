@@ -68,6 +68,10 @@ class GenericChecker(BaseChecker):
         self.stats_errors += 1
         print(f"error: {url}: {err}")
 
+    def handle_timeout(self, url: str, err: str) -> None:
+        self.stats_errors += 1
+        print(f"Page {url} produced a timeout error. A manual review is required")
+
     def handle_429(self, err: RetryAfterException) -> None:
         print(f"backoff: {err.url}: retrying after {err.retry_after} seconds")
 
