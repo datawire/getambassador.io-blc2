@@ -26,6 +26,22 @@ def urlpath(url: str) -> str:
     return urlparse(url).path
 
 
+def link_manually_checked(link: Link) -> bool:
+    """
+    Validate if the link to check should be validated manually. The manual check is used when
+    the external link has problem with our user agent.
+    """
+    links_to_check_manually = [
+        "https://java.com/en/download/",
+        "https://java.com/en/download/help/download_options.html",
+    ]
+    return (
+        len([True for link_to_skip in links_to_check_manually if
+             link.linkurl.ref in link_to_skip])
+        > 0
+    )
+
+
 class AmbassadorChecker(GenericChecker):
     _user_agent_for_link: Dict[str, str] = {
         "https://www.ticketmaster.com/": "Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0",
@@ -82,6 +98,55 @@ class AmbassadorChecker(GenericChecker):
             > 0
             or 'mailto' in link.linkurl.ref
         )
+
+    def handle_link(self, link: Link) -> None:
+        if not link_manually_checked(link):
+            super(AmbassadorChecker, self).handle_link(link)
+        if not self.product_should_skip_link(link):
+            # Check if this link is broken.
+            url = urlparse(link.linkurl.resolved)
+            if link.linkurl.ref.endswith(".eot?#iefix"):
+                link = link._replace(
+                    linkurl=link.linkurl._replace(ref=link.linkurl.ref[: -len("?#iefix")])
+                )
+            elif (
+                url.netloc == 'github.com'
+                and re.search(r'^/[^/]+/[^/]+$', url.path)
+                and url.fragment
+                and not url.fragment.startswith('user-content-')
+            ):
+                link = link._replace(
+                    linkurl=link.linkurl._replace(
+                        resolved=url._replace(
+                            fragment='user-content-' + url.fragment
+                        ).geturl()
+                    )
+                )
+            elif (
+                url.netloc == 'github.com'
+                and re.search(r'^/[^/]+/[^/]+/blob/', url.path)
+                and re.search(r'^L[0-9]+-L[0-9]+$', url.fragment)
+            ):
+                self.enqueue(
+                    link._replace(
+                        linkurl=link.linkurl._replace(
+                            resolved=url._replace(
+                                fragment=url.fragment.split('-')[0]
+                            ).geturl()
+                        )
+                    )
+                )
+                self.enqueue(
+                    link._replace(
+                        linkurl=link.linkurl._replace(
+                            resolved=url._replace(
+                                fragment=url.fragment.split('-')[1]
+                            ).geturl()
+                        )
+                    )
+                )
+                return
+            self.enqueue(link)
 
     def product_should_skip_link_result(self, link: Link, broken: str) -> bool:
         return bool(
@@ -163,9 +228,7 @@ class AmbassadorChecker(GenericChecker):
 
 def main(checkerCls: CheckerInterface, projdir: str) -> int:
     urls = [
-        'http://localhost:9000/',
-        'http://localhost:9000/404.html',
-        'http://localhost:9000/404/',
+        'http://localhost:9000/docs/telepresence/pre-release/quick-start/qs-java/',
     ]
     checker = checkerCls(domain=urlparse(urls[0]).netloc)
     for url in urls:
