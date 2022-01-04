@@ -36,8 +36,13 @@ def link_manually_checked(link: Link) -> bool:
         "https://java.com/en/download/help/download_options.html",
     ]
     return (
-        len([True for link_to_skip in links_to_check_manually if
-             link.linkurl.ref in link_to_skip])
+        len(
+            [
+                True
+                for link_to_skip in links_to_check_manually
+                if link.linkurl.ref in link_to_skip
+            ]
+        )
         > 0
     )
 
