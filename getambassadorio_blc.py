@@ -107,51 +107,6 @@ class AmbassadorChecker(GenericChecker):
     def handle_link(self, link: Link) -> None:
         if not link_manually_checked(link):
             super(AmbassadorChecker, self).handle_link(link)
-        if not self.product_should_skip_link(link):
-            # Check if this link is broken.
-            url = urlparse(link.linkurl.resolved)
-            if link.linkurl.ref.endswith(".eot?#iefix"):
-                link = link._replace(
-                    linkurl=link.linkurl._replace(ref=link.linkurl.ref[: -len("?#iefix")])
-                )
-            elif (
-                url.netloc == 'github.com'
-                and re.search(r'^/[^/]+/[^/]+$', url.path)
-                and url.fragment
-                and not url.fragment.startswith('user-content-')
-            ):
-                link = link._replace(
-                    linkurl=link.linkurl._replace(
-                        resolved=url._replace(
-                            fragment='user-content-' + url.fragment
-                        ).geturl()
-                    )
-                )
-            elif (
-                url.netloc == 'github.com'
-                and re.search(r'^/[^/]+/[^/]+/blob/', url.path)
-                and re.search(r'^L[0-9]+-L[0-9]+$', url.fragment)
-            ):
-                self.enqueue(
-                    link._replace(
-                        linkurl=link.linkurl._replace(
-                            resolved=url._replace(
-                                fragment=url.fragment.split('-')[0]
-                            ).geturl()
-                        )
-                    )
-                )
-                self.enqueue(
-                    link._replace(
-                        linkurl=link.linkurl._replace(
-                            resolved=url._replace(
-                                fragment=url.fragment.split('-')[1]
-                            ).geturl()
-                        )
-                    )
-                )
-                return
-            self.enqueue(link)
 
     def product_should_skip_link_result(self, link: Link, broken: str) -> bool:
         return bool(
