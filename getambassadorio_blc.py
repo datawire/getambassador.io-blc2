@@ -9,6 +9,7 @@ from urllib.parse import urldefrag, urlparse
 
 from blclib import Link, URLReference
 from generic_blc import CheckerInterface, GenericChecker
+from utils.read_input_pages import ReadInputPages
 
 
 def is_doc_url(url: URLReference) -> Optional[str]:
@@ -186,13 +187,20 @@ class AmbassadorChecker(GenericChecker):
             return [desc.split()[0] for desc in attrvalue.split(',')]
 
 
-def main(checkerCls: CheckerInterface, projdir: str) -> int:
+def main(checkerCls: CheckerInterface, projdir: str, pages_to_check_file: str) -> int:
     urls = [
         'http://localhost:9000/',
         'http://localhost:9000/404.html',
         'http://localhost:9000/404/',
     ]
     checker = checkerCls(domain=urlparse(urls[0]).netloc)
+
+    if len(pages_to_check_file) > 0:
+        pages_to_check_reader = ReadInputPages(pages_to_check_file, 'http://localhost:9000/')
+        pages_to_check = pages_to_check_reader.read_input_pages()
+        checker.pages_to_check = pages_to_check
+        urls = urls if len(pages_to_check) == 0 else pages_to_check
+
     for url in urls:
         checker.enqueue(URLReference(ref=url))
 
@@ -231,10 +239,10 @@ def main(checkerCls: CheckerInterface, projdir: str) -> int:
 
 if __name__ == "__main__":
     try:
-        if len(sys.argv) != 2:
+        if len(sys.argv) < 2:
             print(f"Usage: {sys.argv[0]} PROJDIR", file=sys.stderr)
             sys.exit(2)
-        sys.exit(main(AmbassadorChecker, sys.argv[1]))
+        sys.exit(main(AmbassadorChecker, sys.argv[1], sys.argv[2] if len(sys.argv) else ''))
     except KeyboardInterrupt as err:
         print(err, file=sys.stderr)
         sys.exit(130)

@@ -1,6 +1,6 @@
 PRODUCT ?= generic
 run: requirements.txt.stamp
-	. ./venv/bin/activate && PYTHONUNBUFFERED=y ./$(PRODUCT)_blc.py '$(TARGET)'
+	. ./venv/bin/activate && PYTHONUNBUFFERED=y ./$(PRODUCT)_blc.py '$(TARGET)' '$(PAGES_TO_CHECK)'
 .PHONY: run
 
 # lint
