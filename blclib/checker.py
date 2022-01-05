@@ -87,6 +87,7 @@ class BaseChecker:
     _queued_pages: Set[str] = set()
     _done_pages: Set[str] = set()
     _user_agent_for_link: Dict[str, str] = dict()
+    pages_to_check: List[str] = []
 
     def __init__(self) -> None:
         self._client = HTTPClient(self)
@@ -125,7 +126,10 @@ class BaseChecker:
                     if isinstance(task, Link):
                         self._check_link(task)
                     elif isinstance(task, URLReference):
-                        self._check_page(task)
+                        if len(self.pages_to_check) == 0:
+                            self._check_page(task)
+                        elif len(self.pages_to_check) > 0 and task.resolved in self.pages_to_check:
+                            self._check_page(task)
                     else:
                         assert False
                 except RetryAfterException as err:
