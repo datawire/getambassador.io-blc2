@@ -128,10 +128,7 @@ class BaseChecker:
                     elif isinstance(task, URLReference):
                         if len(self.pages_to_check) == 0:
                             self._check_page(task)
-                        elif (
-                            len(self.pages_to_check) > 0
-                            and task.resolved in self.pages_to_check
-                        ):
+                        elif task.resolved in self.pages_to_check:
                             self._check_page(task)
                     else:
                         assert False

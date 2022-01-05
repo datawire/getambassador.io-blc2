@@ -36,6 +36,8 @@ of pages with broken links.
      `${PRODUCT}_blc.py` files.
  - `USER_AGENT` (default: `github.com/datawire/getambassador.io-blc2`; not required to be set):
     + Specifies the `User_Agent` header value for each request. It avoids security blocks from external sites
+ - `PAGES_TO_CHECK` (not required to be set):
+    + Specifies the
 
 # Why
 
