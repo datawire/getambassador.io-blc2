@@ -14,7 +14,9 @@ class ReadInputPages:
         try:
             with open(self.__file_path, mode='r') as input_pages:
                 while line := input_pages.readline():
-                    pages_to_check += [self.__parse_file_to_page(page) for page in line.split(' ')]
+                    pages_to_check += [
+                        self.__parse_file_to_page(page) for page in line.split(' ')
+                    ]
         except FileNotFoundError as err:
             print(f"Is not possible to read the file: {err}")
             return []
