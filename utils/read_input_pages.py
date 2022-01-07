@@ -28,7 +28,8 @@ class ReadInputPages:
         input: ambassador-docs/docs/edge-stack/2.0/howtos/advanced-rate-limiting.md
         returns: {base_url}/docs/edge-stack/2.0/howtos/advanced-rate-limiting/
         """
-        page_path = page_path.replace(".md\n", "")
+        page_path = page_path.replace("\n", "")
+        page_path = page_path.replace(".md", "")
         page_path = page_path.replace("ambassador-docs/", "")
         page_path = (
             page_path.replace('v', '', 1) if "telepresence" in page_path else page_path
