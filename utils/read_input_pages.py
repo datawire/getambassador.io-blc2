@@ -30,4 +30,7 @@ class ReadInputPages:
         """
         page_path = page_path.replace(".md\n", "")
         page_path = page_path.replace("ambassador-docs/", "")
+        page_path = (
+            page_path.replace('v', '', 1) if "telepresence" in page_path else page_path
+        )
         return self.__base_url + page_path
