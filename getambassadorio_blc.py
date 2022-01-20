@@ -235,7 +235,7 @@ def main(checkerCls: CheckerInterface, projdir: str, pages_to_check_file: str) -
     print(
         f"  Results: Encountered {checker.stats_broken_links} errors, {checker.stats_links_bad} bad links."
     )
-    return 1 if len(pages_to_check) > 0 and checker.stats_broken_links > 0 else 0
+    return 0
 
 
 if __name__ == "__main__":
