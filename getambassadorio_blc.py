@@ -60,7 +60,6 @@ class AmbassadorChecker(GenericChecker):
         "https://www.comparably.com/news/best-leadership-teams-2021/": "Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0",
         "https://www.comparably.com/news/best-companies-for-career-growth-2021/": "Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0",
         "https://www.comparably.com/": "Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0",
-        "": "Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0",
     }
 
     def log_broken(self, link: Link, reason: str) -> None:
