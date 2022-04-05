@@ -6,7 +6,7 @@ black
 mypy
 lxml-stubs
 types-beautifulsoup4
-types-requests
+types-requests==2.25.11
 
 # Other linting
 flake8
