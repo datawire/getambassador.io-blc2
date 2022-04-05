@@ -189,7 +189,6 @@ class AmbassadorChecker(GenericChecker):
 
 def main(checkerCls: CheckerInterface, projdir: str, pages_to_check_file: str) -> int:
     urls = [
-        'http://localhost:9000/docs/telepresence/',
         'http://localhost:9000/',
         'http://localhost:9000/404.html',
         'http://localhost:9000/404/',
