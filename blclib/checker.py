@@ -150,7 +150,8 @@ class BaseChecker:
                     self.enqueue(task)
 
     def _get_user_agent(self, url: str) -> str:
-        return self._user_agent_for_link.get(url, USER_AGENT)
+        domain = urlparse(url).netloc
+        return self._user_agent_for_link.get(domain, USER_AGENT)
 
     def _get_resp(self, url: str) -> Union[requests.Response, str]:
         try:
