@@ -35,6 +35,12 @@ def link_manually_checked(link: Link) -> bool:
     links_to_check_manually = [
         "https://java.com/en/download/",
         "https://java.com/en/download/help/download_options.html",
+        "https://www.comparably.com/awards/winners/best-company-boston-2022",
+        "https://www.comparably.com/news/best-work-life-balance-2021/",
+        "https://www.comparably.com/news/best-ceos-2021/",
+        "https://www.comparably.com/news/best-leadership-teams-2021/",
+        "https://www.comparably.com/news/best-companies-for-career-growth-2021/",
+        "https://www.comparably.com/",
     ]
     return (
         len(
