@@ -8,7 +8,6 @@ from urllib.parse import urldefrag, urlparse
 import bs4.element
 import requests
 import tinycss2
-import urllib3.util
 from bs4 import BeautifulSoup
 from requests.utils import parse_header_links
 
