@@ -41,7 +41,7 @@ def link_manually_checked(link: Link) -> bool:
         "https://www.comparably.com/news/best-leadership-teams-2021/",
         "https://www.comparably.com/news/best-companies-for-career-growth-2021/",
         "https://www.comparably.com/",
-        "https://comparably.com/"
+        "https://comparably.com/",
     ]
     return (
         len(
