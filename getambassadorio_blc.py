@@ -42,6 +42,8 @@ def link_manually_checked(link: Link) -> bool:
         "https://www.comparably.com/news/best-companies-for-career-growth-2021/",
         "https://www.comparably.com/",
         "https://comparably.com/",
+        "https://artifacthub.io/",
+        "https://artifacthub.io/packages/helm/datawire/edge-stack/7.4.0#configuration",
     ]
     return (
         len(
