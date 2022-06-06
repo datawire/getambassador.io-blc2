@@ -43,7 +43,7 @@ def link_manually_checked(link: Link) -> bool:
         "https://www.comparably.com/",
         "https://comparably.com/",
         "https://artifacthub.io/",
-        "https://artifacthub.io/packages/helm/datawire/edge-stack/7.4.0#configuration"
+        "https://artifacthub.io/packages/helm/datawire/edge-stack/7.4.0#configuration",
     ]
     return (
         len(
