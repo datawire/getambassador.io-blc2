@@ -110,6 +110,7 @@ class AmbassadorChecker(GenericChecker):
             'http://localhost:3000/color',
             'https://github.com/datawire/project-template/generate',
             'https://github.com/datawire/getambassador.io',
+            'http://localhost:9000/docs/telepresence/latest/extension/intro/'
         ]
         return (
             len([True for link_to_skip in links_to_skip if link.linkurl.ref in link_to_skip])
