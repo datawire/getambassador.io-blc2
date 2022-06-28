@@ -26,6 +26,7 @@ def is_doc_url(url: URLReference) -> Optional[str]:
 def urlpath(url: str) -> str:
     return urlparse(url).path
 
+
 def domains_manually_checked(link: Link) -> bool:
     links_to_check_manually = [
         "https://artifacthub.io/",
@@ -40,6 +41,7 @@ def domains_manually_checked(link: Link) -> bool:
         )
         > 0
     )
+
 
 def link_manually_checked(link: Link) -> bool:
     """
@@ -124,7 +126,7 @@ class AmbassadorChecker(GenericChecker):
             'http://localhost:3000/color',
             'https://github.com/datawire/project-template/generate',
             'https://github.com/datawire/getambassador.io',
-            'http://localhost:9000/docs/telepresence/latest/extension/intro/'
+            'http://localhost:9000/docs/telepresence/latest/extension/intro/',
         ]
         return (
             len([True for link_to_skip in links_to_skip if link.linkurl.ref in link_to_skip])
