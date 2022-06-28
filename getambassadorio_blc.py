@@ -26,6 +26,20 @@ def is_doc_url(url: URLReference) -> Optional[str]:
 def urlpath(url: str) -> str:
     return urlparse(url).path
 
+def domains_manually_checked(link: Link) -> bool:
+    links_to_check_manually = [
+        "https://artifacthub.io/",
+    ]
+    return (
+        len(
+            [
+                True
+                for domain_to_skip in links_to_check_manually
+                if domain_to_skip in link.linkurl.ref
+            ]
+        )
+        > 0
+    )
 
 def link_manually_checked(link: Link) -> bool:
     """
@@ -119,7 +133,7 @@ class AmbassadorChecker(GenericChecker):
         )
 
     def handle_link(self, link: Link) -> None:
-        if not link_manually_checked(link):
+        if not link_manually_checked(link) and not domains_manually_checked(link):
             super(AmbassadorChecker, self).handle_link(link)
 
     def product_should_skip_link_result(self, link: Link, broken: str) -> bool:
