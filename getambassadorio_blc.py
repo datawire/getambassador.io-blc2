@@ -26,6 +26,7 @@ def is_doc_url(url: URLReference) -> Optional[str]:
 def urlpath(url: str) -> str:
     return urlparse(url).path
 
+
 def domains_manually_checked(link: Link) -> bool:
     links_to_check_manually = [
         "https://artifacthub.io/",
@@ -40,6 +41,7 @@ def domains_manually_checked(link: Link) -> bool:
         )
         > 0
     )
+
 
 def link_manually_checked(link: Link) -> bool:
     """
