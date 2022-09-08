@@ -150,7 +150,7 @@ class AmbassadorChecker(GenericChecker):
             )
             or (
                 broken == 'HTTP_999'
-                and link.linkurl.resolved.startswith('https://www.linkedin.com/')
+                and re.search('^https://.+linkedin.com', link.linkurl.resolved)
             )
             or (
                 link.html
