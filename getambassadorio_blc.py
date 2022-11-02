@@ -30,6 +30,7 @@ def urlpath(url: str) -> str:
 def domains_manually_checked(link: Link) -> bool:
     links_to_check_manually = [
         "https://artifacthub.io/",
+        "https://blog.getambassador.io/"
     ]
     return (
         len(
@@ -60,8 +61,6 @@ def link_manually_checked(link: Link) -> bool:
         "https://comparably.com/",
         "https://artifacthub.io/",
         "https://artifacthub.io/packages/helm/datawire/edge-stack/7.4.0#configuration",
-        "https://blog.getambassador.io/building-ambassador-an-open-source-api-gateway-on-kubernetes-and-envoy-ed01ed520844",
-        "https://blog.getambassador.io/building-ambassador-an-open-source-api-gateway-on-kubernetes-and-envoy-ed01ed520844"
     ]
     return (
         len(
