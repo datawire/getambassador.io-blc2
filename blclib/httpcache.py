@@ -68,10 +68,9 @@ class HTTPClient(requests.Session):
                         raise RetryAfterException(str(req.url), 60)
                     elif cachekey:
                         parsed_url = urlparse(req.url)
-                        args = parse_qs(parsed_url.query)
-                        if not resp.is_redirect or "//localhost" in req.url or not args:
+                        args = parse_qs(str(parsed_url.query))
+                        if not resp.is_redirect or "//localhost" in str(req.url) or not args:
                             client._cache[cachekey] = resp
-                            
                 return resp
 
             def close(self) -> None:
