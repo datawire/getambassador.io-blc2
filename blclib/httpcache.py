@@ -1,6 +1,6 @@
 from copy import deepcopy
 from typing import Container, Dict, Mapping, Optional, Text, Tuple, Union
-from urllib.parse import urldefrag, urljoin, urlparse, parse_qs
+from urllib.parse import parse_qs, urldefrag, urljoin, urlparse
 
 import requests
 import requests.adapters
