@@ -1,6 +1,6 @@
 from copy import deepcopy
 from typing import Container, Dict, Mapping, Optional, Text, Tuple, Union
-from urllib.parse import urldefrag, urljoin
+from urllib.parse import urldefrag, urljoin, urlparse, parse_qs
 
 import requests
 import requests.adapters
@@ -67,8 +67,11 @@ class HTTPClient(requests.Session):
                     ):
                         raise RetryAfterException(str(req.url), 60)
                     elif cachekey:
-                        client._cache[cachekey] = resp
-
+                        parsed_url = urlparse(req.url)
+                        args = parse_qs(parsed_url.query)
+                        if not resp.is_redirect or "//localhost" in req.url or not args:
+                            client._cache[cachekey] = resp
+                            
                 return resp
 
             def close(self) -> None:
