@@ -108,6 +108,7 @@ class GenericChecker(BaseChecker):
                 and re.search(r'^/[^/]+/[^/]+$', url.path)
                 and url.fragment
                 and not url.fragment.startswith('user-content-')
+                and not url.fragment.lower().strip() == 'readme'
             ):
                 link = link._replace(
                     linkurl=link.linkurl._replace(
