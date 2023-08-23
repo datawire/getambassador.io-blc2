@@ -80,7 +80,6 @@ def get_tag_attr(tag: bs4.element.Tag, attrname: str) -> Optional[str]:
 
 
 class BaseChecker:
-
     _client: HTTPClient
     _bodycache: Dict[str, Union[BeautifulSoup, str]] = dict()
     _queue: List[Union[Link, URLReference]] = []
@@ -207,10 +206,12 @@ class BaseChecker:
         self.handle_link_result(link, broken)
 
     def isGitHubFile(self, response: requests.Response):
-        try: 
+        try:
             ref = urlparse(response.url)
             last_slug = ref[2].rpartition('/')[2]
-            return "github" in ref.netloc and "." in last_slug and response.status_code == 200 
+            return (
+                "github" in ref.netloc and "." in last_slug and response.status_code == 200
+            )
         except Exception as err:
             return False
 
@@ -221,7 +222,7 @@ class BaseChecker:
             return resp
         link = link._replace(linkurl=link.linkurl._replace(resolved=resp.url))
 
-        if self.isGitHubFile(resp): 
+        if self.isGitHubFile(resp):
             return None
 
         # Check the fragment

@@ -28,10 +28,7 @@ def urlpath(url: str) -> str:
 
 
 def domains_manually_checked(link: Link) -> bool:
-    links_to_check_manually = [
-        "https://artifacthub.io/",
-        "https://twitter.com"
-    ]
+    links_to_check_manually = ["https://artifacthub.io/", "https://twitter.com"]
     return (
         len(
             [

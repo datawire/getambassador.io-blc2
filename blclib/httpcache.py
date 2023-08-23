@@ -15,7 +15,6 @@ class RetryAfterException(Exception):
 
 
 class HTTPClient(requests.Session):
-
     _cache: Dict[str, requests.Response] = dict()
 
     def get_adapter(self, url: str) -> requests.adapters.BaseAdapter:
