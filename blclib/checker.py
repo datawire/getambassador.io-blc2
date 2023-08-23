@@ -206,12 +206,23 @@ class BaseChecker:
         broken = self._is_link_broken(link)
         self.handle_link_result(link, broken)
 
+    def isGitHubFile(self, response: requests.Response):
+        try: 
+            ref = urlparse(response.url)
+            last_slug = ref[2].rpartition('/')[2]
+            return "github" in ref.netloc and "." in last_slug and response.status_code == 200 
+        except Exception as err:
+            return False
+
     def _is_link_broken(self, link: Link) -> Optional[str]:
         # Resolve redirects
         resp = self._get_resp(link.linkurl.resolved)
         if isinstance(resp, str):
             return resp
         link = link._replace(linkurl=link.linkurl._replace(resolved=resp.url))
+
+        if self.isGitHubFile(resp): 
+            return None
 
         # Check the fragment
         fragment = urldefrag(link.linkurl.resolved).fragment
