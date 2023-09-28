@@ -199,12 +199,15 @@ class AmbassadorChecker(GenericChecker):
 
     @staticmethod
     def _parse_srcset_value(attrvalue: str) -> List:
+        if attrvalue is None or attrvalue=="":
+            return []
+
         if (
             "?rect=" in attrvalue or "&rect=" in attrvalue
         ) and "https://cdn.sanity.io/images/" in attrvalue:
             return re.findall("https[^ ]*", attrvalue)
-        else:
-            return [desc.split()[0] for desc in attrvalue.split(',')]
+
+        return [desc.split()[0] for desc in attrvalue.split(',')]
 
 
 def main(checkerCls: CheckerInterface, projdir: str, pages_to_check_file: str) -> int:
