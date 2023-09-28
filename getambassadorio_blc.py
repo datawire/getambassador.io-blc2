@@ -199,6 +199,9 @@ class AmbassadorChecker(GenericChecker):
 
     @staticmethod
     def _parse_srcset_value(attrvalue: str) -> List:
+        if attrvalue is None or attrvalue=="":
+            return []
+
         if (
             "?rect=" in attrvalue or "&rect=" in attrvalue
         ) and "https://cdn.sanity.io/images/" in attrvalue:
