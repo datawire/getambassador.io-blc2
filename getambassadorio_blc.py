@@ -125,6 +125,18 @@ class AmbassadorChecker(GenericChecker):
             'https://github.com/datawire/project-template/generate',
             'https://github.com/datawire/getambassador.io',
             'http://localhost:9000/docs/telepresence/latest/extension/intro/',
+            '/favicons/apple-icon-57x57.png',
+            '/favicons/apple-icon-60x60.png',
+            '/favicons/apple-icon-72x72.png',
+            '/favicons/apple-icon-76x76.png',
+            '/favicons/apple-icon-114x114.png',
+            '/favicons/apple-icon-120x120.png',
+            '/favicons/apple-icon-144x144.png',
+            '/favicons/apple-icon-152x152.png',
+            '/favicons/apple-icon-180x180.png',
+            '/favicons/android-icon-192x192.png',
+            '/favicons/favicon-96x96.png',
+            '/sitemap/sitemap-index.xml',
         ]
         return (
             len([True for link_to_skip in links_to_skip if link.linkurl.ref in link_to_skip])
