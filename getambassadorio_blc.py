@@ -137,6 +137,7 @@ class AmbassadorChecker(GenericChecker):
             '/favicons/android-icon-192x192.png',
             '/favicons/favicon-96x96.png',
             '/sitemap/sitemap-index.xml',
+            '/docs/telepresence/latest/docker/extension',
         ]
         return (
             len([True for link_to_skip in links_to_skip if link.linkurl.ref in link_to_skip])
