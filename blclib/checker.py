@@ -212,7 +212,7 @@ class BaseChecker:
             return (
                 "github" in ref.netloc and "." in last_slug and response.status_code == 200
             )
-        except Exception as err:
+        except Exception:
             return False
 
     def _is_link_broken(self, link: Link) -> Optional[str]:

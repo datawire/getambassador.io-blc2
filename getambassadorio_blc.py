@@ -139,6 +139,7 @@ class AmbassadorChecker(GenericChecker):
             '/sitemap/sitemap-index.xml',
             '/docs/telepresence/latest/docker/extension/',
             'https://www.googletagmanager.com/ns.html?id=undefined',
+            '/404/',
         ]
         return (
             len([True for link_to_skip in links_to_skip if link.linkurl.ref in link_to_skip])
@@ -213,7 +214,7 @@ class AmbassadorChecker(GenericChecker):
 
     @staticmethod
     def _parse_srcset_value(attrvalue: str) -> List:
-        if attrvalue is None or attrvalue=="":
+        if attrvalue is None or attrvalue == "":
             return []
 
         if (
