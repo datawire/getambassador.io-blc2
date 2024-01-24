@@ -289,7 +289,7 @@ if __name__ == "__main__":
                 AmbassadorChecker,
                 sys.argv[1],
                 sys.argv[2],
-                sys.argv[3] if len(sys.argv) else '',
+                sys.argv[3],
             )
         )
     except KeyboardInterrupt as err:
