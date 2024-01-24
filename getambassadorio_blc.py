@@ -225,7 +225,9 @@ class AmbassadorChecker(GenericChecker):
         return [desc.split()[0] for desc in attrvalue.split(',')]
 
 
-def main(checkerCls: CheckerInterface, projdir: str, pages_to_check_file: str, base_address: str) -> int:
+def main(
+    checkerCls: CheckerInterface, projdir: str, pages_to_check_file: str, base_address: str
+) -> int:
     urls = [
         f'{base_address}/',
         f'{base_address}/404.html',
@@ -278,9 +280,15 @@ def main(checkerCls: CheckerInterface, projdir: str, pages_to_check_file: str, b
 if __name__ == "__main__":
     try:
         if len(sys.argv) < 3:
-            print(f"Usage: {sys.argv[0]} PROJDIR PAGES_TO_CHECK BASE_ADDRESS", file=sys.stderr)
+            print(
+                f"Usage: {sys.argv[0]} PROJDIR PAGES_TO_CHECK BASE_ADDRESS", file=sys.stderr
+            )
             sys.exit(2)
-        sys.exit(main(AmbassadorChecker, sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) else ''))
+        sys.exit(
+            main(
+                AmbassadorChecker, sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) else ''
+            )
+        )
     except KeyboardInterrupt as err:
         print(err, file=sys.stderr)
         sys.exit(130)
