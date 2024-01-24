@@ -279,7 +279,7 @@ def main(
 
 if __name__ == "__main__":
     try:
-        if len(sys.argv) < 3:
+        if len(sys.argv) < 4:
             print(
                 f"Usage: {sys.argv[0]} PROJDIR PAGES_TO_CHECK BASE_ADDRESS", file=sys.stderr
             )
