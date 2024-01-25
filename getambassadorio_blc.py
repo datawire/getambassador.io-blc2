@@ -225,16 +225,18 @@ class AmbassadorChecker(GenericChecker):
         return [desc.split()[0] for desc in attrvalue.split(',')]
 
 
-def main(checkerCls: CheckerInterface, projdir: str, pages_to_check_file: str) -> int:
+def main(
+    checkerCls: CheckerInterface, projdir: str, pages_to_check_file: str, base_address: str
+) -> int:
     urls = [
-        'http://localhost:9000/',
-        'http://localhost:9000/404.html',
-        'http://localhost:9000/404/',
+        f'{base_address}/',
+        f'{base_address}/404.html',
+        f'{base_address}/404/',
     ]
     checker = checkerCls(domain=urlparse(urls[0]).netloc)
 
     if len(pages_to_check_file) > 0:
-        pages_to_check_reader = ReadInputPages(pages_to_check_file, 'http://localhost:9000/')
+        pages_to_check_reader = ReadInputPages(pages_to_check_file, f'{base_address}/')
         pages_to_check = pages_to_check_reader.read_input_pages()
         checker.pages_to_check = pages_to_check
         urls = urls if len(pages_to_check) == 0 else pages_to_check
@@ -277,10 +279,19 @@ def main(checkerCls: CheckerInterface, projdir: str, pages_to_check_file: str) -
 
 if __name__ == "__main__":
     try:
-        if len(sys.argv) < 2:
-            print(f"Usage: {sys.argv[0]} PROJDIR", file=sys.stderr)
+        if len(sys.argv) < 4:
+            print(
+                f"Usage: {sys.argv[0]} PROJDIR PAGES_TO_CHECK BASE_ADDRESS", file=sys.stderr
+            )
             sys.exit(2)
-        sys.exit(main(AmbassadorChecker, sys.argv[1], sys.argv[2] if len(sys.argv) else ''))
+        sys.exit(
+            main(
+                AmbassadorChecker,
+                sys.argv[1],
+                sys.argv[2],
+                sys.argv[3],
+            )
+        )
     except KeyboardInterrupt as err:
         print(err, file=sys.stderr)
         sys.exit(130)
