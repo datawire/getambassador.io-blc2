@@ -215,7 +215,7 @@ class AmbassadorChecker(GenericChecker):
 
     @staticmethod
     def _parse_srcset_value(attrvalue: str) -> List:
-        if attrvalue is None or attrvalue=="":
+        if attrvalue is None or attrvalue == "":
             return []
 
         if (

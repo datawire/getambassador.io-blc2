@@ -173,8 +173,7 @@ class GenericChecker(BaseChecker):
 
 
 class CheckerInterface(Protocol):
-    def __call__(self, domain: str) -> GenericChecker:
-        ...
+    def __call__(self, domain: str) -> GenericChecker: ...  # noqa: E704
 
 
 def crawl_filesystem(pubdir: str) -> Set[str]:
