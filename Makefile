@@ -23,7 +23,7 @@ venv:
 	python3 -m venv venv
 
 %.txt.stamp: %.txt venv
-	./venv/bin/pip install -r $<
+	./venv/bin/pip3 install -r $<
 	date > $@
 dev_requirements.txt.stamp: requirements.txt.stamp
 
