@@ -19,9 +19,10 @@ format: dev_requirements.txt.stamp package.json.dev.stamp
 
 # pip
 
-venv/bin/pip:
+venv:
 	python3 -m venv venv
-%.txt.stamp: %.txt venv/bin/pip
+
+%.txt.stamp: %.txt venv
 	./venv/bin/pip install -r $<
 	date > $@
 dev_requirements.txt.stamp: requirements.txt.stamp
@@ -38,4 +39,4 @@ package.json.dev.stamp: package.json yarn.lock
 
 clean:
 	rm -f *.stamp; \
-	rm -fr venv/bin/pip
+	rm -fr venv/
