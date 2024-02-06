@@ -140,6 +140,7 @@ class AmbassadorChecker(GenericChecker):
             '/docs/telepresence/latest/docker/extension/',
             'https://www.googletagmanager.com/ns.html?id=undefined',
             '/404/',
+            'https://www.g2.com/products/ambassador-labs/reviews',
         ]
         return (
             len([True for link_to_skip in links_to_skip if link.linkurl.ref in link_to_skip])
