@@ -35,3 +35,7 @@ package.json.stamp: package.json yarn.lock
 package.json.dev.stamp: package.json yarn.lock
 	yarn install
 	date > $@
+
+clean:
+	rm -f *.stamp; \
+	rm -fr venv/bin/pip
