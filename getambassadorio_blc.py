@@ -140,6 +140,7 @@ class AmbassadorChecker(GenericChecker):
             '/docs/telepresence/latest/docker/extension/',
             'https://www.googletagmanager.com/ns.html?id=undefined',
             '/404/',
+            'https://www.g2.com/products/ambassador-labs/reviews',
         ]
         return (
             len([True for link_to_skip in links_to_skip if link.linkurl.ref in link_to_skip])
@@ -214,7 +215,7 @@ class AmbassadorChecker(GenericChecker):
 
     @staticmethod
     def _parse_srcset_value(attrvalue: str) -> List:
-        if attrvalue is None or attrvalue == "":
+        if attrvalue is None or attrvalue=="":
             return []
 
         if (
@@ -225,18 +226,16 @@ class AmbassadorChecker(GenericChecker):
         return [desc.split()[0] for desc in attrvalue.split(',')]
 
 
-def main(
-    checkerCls: CheckerInterface, projdir: str, pages_to_check_file: str, base_address: str
-) -> int:
+def main(checkerCls: CheckerInterface, projdir: str, pages_to_check_file: str) -> int:
     urls = [
-        f'{base_address}/',
-        f'{base_address}/404.html',
-        f'{base_address}/404/',
+        'http://localhost:9000/',
+        'http://localhost:9000/404.html',
+        'http://localhost:9000/404/',
     ]
     checker = checkerCls(domain=urlparse(urls[0]).netloc)
 
     if len(pages_to_check_file) > 0:
-        pages_to_check_reader = ReadInputPages(pages_to_check_file, f'{base_address}/')
+        pages_to_check_reader = ReadInputPages(pages_to_check_file, 'http://localhost:9000/')
         pages_to_check = pages_to_check_reader.read_input_pages()
         checker.pages_to_check = pages_to_check
         urls = urls if len(pages_to_check) == 0 else pages_to_check
@@ -279,19 +278,10 @@ def main(
 
 if __name__ == "__main__":
     try:
-        if len(sys.argv) < 4:
-            print(
-                f"Usage: {sys.argv[0]} PROJDIR PAGES_TO_CHECK BASE_ADDRESS", file=sys.stderr
-            )
+        if len(sys.argv) < 2:
+            print(f"Usage: {sys.argv[0]} PROJDIR", file=sys.stderr)
             sys.exit(2)
-        sys.exit(
-            main(
-                AmbassadorChecker,
-                sys.argv[1],
-                sys.argv[2],
-                sys.argv[3],
-            )
-        )
+        sys.exit(main(AmbassadorChecker, sys.argv[1], sys.argv[2] if len(sys.argv) else ''))
     except KeyboardInterrupt as err:
         print(err, file=sys.stderr)
         sys.exit(130)
