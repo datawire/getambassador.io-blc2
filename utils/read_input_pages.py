@@ -1,3 +1,4 @@
+import sys
 from typing import List
 
 
@@ -19,7 +20,7 @@ class ReadInputPages:
                     ]
         except FileNotFoundError as err:
             print(f"Is not possible to read the file: {err}")
-            return []
+            sys.exit(2)
         return pages_to_check
 
     def __parse_file_to_page(self, page_path: str) -> str:
